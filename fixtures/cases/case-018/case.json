@@ -1,0 +1,10 @@
+{
+  "case_id": "case-018",
+  "title": "Percentage formatter truncates 0.6666 to 66% instead of 67%",
+  "bug_class": "percentage formatting that truncates instead of rounding",
+  "target_symbol": "format_percentage",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "format/percent.py"
+  ]
+}

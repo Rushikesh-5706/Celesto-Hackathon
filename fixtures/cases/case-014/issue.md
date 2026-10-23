@@ -1,0 +1,1 @@
+merge_configs mutates the nested dictionary of the base configuration due to shallow copying.

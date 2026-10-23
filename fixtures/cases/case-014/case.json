@@ -1,0 +1,10 @@
+{
+  "case_id": "case-014",
+  "title": "Config merge mutates default dictionary in-place",
+  "bug_class": "shallow copy aliasing in a config merge",
+  "target_symbol": "merge_configs",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "config/merger.py"
+  ]
+}

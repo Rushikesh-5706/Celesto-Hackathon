@@ -1,0 +1,1 @@
+CaseDict stored with uppercase key cannot be retrieved using lowercase key.

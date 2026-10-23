@@ -1,0 +1,1 @@
+calculate_average([]) raises ZeroDivisionError rather than returning 0.0 or None.

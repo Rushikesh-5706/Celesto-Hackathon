@@ -1,0 +1,57 @@
+services:
+  ledger:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ledger
+      POSTGRES_DB: ledger
+    volumes:
+      - ./seeds:/docker-entrypoint-initdb.d:ro
+      - ledger_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${LEDGER_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger -d ledger"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  api:
+    build: .
+    image: rushi5706/celesto-hackathon-api:latest
+    depends_on:
+      ledger:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      DATABASE_URL: "postgresql://ledger:ledger@ledger:5432/ledger"
+      API_PORT: "8080"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      CELESTO_PROVIDER: "${CELESTO_PROVIDER:-cloud}"
+      CELESTO_API_KEY: "${CELESTO_API_KEY:-}"
+      LLM_BASE_URL: "${LLM_BASE_URL:-}"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_MODEL: "${LLM_MODEL:-}"
+      SANDBOX_SIZE: "${SANDBOX_SIZE:-micro}"
+      SANDBOX_PRICE_PER_HOUR_USD: "${SANDBOX_PRICE_PER_HOUR_USD:-0.015}"
+      LLM_INPUT_PRICE_PER_MTOK_USD: "${LLM_INPUT_PRICE_PER_MTOK_USD:-0.0}"
+      LLM_OUTPUT_PRICE_PER_MTOK_USD: "${LLM_OUTPUT_PRICE_PER_MTOK_USD:-0.0}"
+      AGENT_MAX_TURNS: "${AGENT_MAX_TURNS:-14}"
+      RUN_TIMEOUT_S: "${RUN_TIMEOUT_S:-600}"
+      STEP_TIMEOUT_S: "${STEP_TIMEOUT_S:-120}"
+      REPORTS_DIR: "/app/reports"
+      LOGS_DIR: "/app/logs"
+      AUDIT_LOG_PATH: "/app/var/commands.jsonl"
+      FIXTURES_DIR: "/app/fixtures/cases"
+      CELESTO_NO_TELEMETRY: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  ledger_data:

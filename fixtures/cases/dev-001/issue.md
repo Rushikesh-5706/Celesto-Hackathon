@@ -1,0 +1,1 @@
+When summing an inclusive range from 1 to 5, the total returned is 10 instead of 15. The upper limit seems omitted.

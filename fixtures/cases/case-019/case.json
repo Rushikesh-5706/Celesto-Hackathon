@@ -1,0 +1,10 @@
+{
+  "case_id": "case-019",
+  "title": "Interval merger leaves touching intervals unmerged",
+  "bug_class": "merging adjacent intervals",
+  "target_symbol": "merge_intervals",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "intervals/merger.py"
+  ]
+}

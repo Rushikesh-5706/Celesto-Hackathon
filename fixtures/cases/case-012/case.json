@@ -1,0 +1,10 @@
+{
+  "case_id": "case-012",
+  "title": "Case-insensitive dict wrapper fails to normalize lookup keys",
+  "bug_class": "case-insensitive key collision in a dict wrapper",
+  "target_symbol": "CaseDict",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "collections_ext/casedict.py"
+  ]
+}

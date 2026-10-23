@@ -1,0 +1,10 @@
+{
+  "case_id": "case-016",
+  "title": "Exponential backoff starts at second interval",
+  "bug_class": "retry backoff schedule off by one",
+  "target_symbol": "get_backoff_delay",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "retry/backoff.py"
+  ]
+}

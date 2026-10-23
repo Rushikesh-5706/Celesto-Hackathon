@@ -1,0 +1,1 @@
+merge_intervals([[1, 3], [3, 5]]) returns two intervals instead of merging touching bounds into [[1, 5]].

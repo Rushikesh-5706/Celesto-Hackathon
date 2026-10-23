@@ -1,0 +1,1 @@
+clean_line removes spaces but leaves trailing newline character on input lines.

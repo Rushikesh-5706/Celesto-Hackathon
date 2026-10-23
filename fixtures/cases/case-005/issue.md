@@ -1,0 +1,1 @@
+slugify('café') results in 'caf' instead of 'cafe' because accented characters are dropped without NFKD normalization.

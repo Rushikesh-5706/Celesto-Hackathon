@@ -1,0 +1,10 @@
+{
+  "case_id": "case-017",
+  "title": "Tokenizer returns empty tokens for multiple consecutive spaces",
+  "bug_class": "whitespace handling in a tokenizer",
+  "target_symbol": "tokenize_words",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "nlp/tokenizer.py"
+  ]
+}

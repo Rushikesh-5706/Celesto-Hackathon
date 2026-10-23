@@ -1,0 +1,1 @@
+Accessing an entry in SimpleLRU does not refresh its position, causing it to be prematurely evicted.

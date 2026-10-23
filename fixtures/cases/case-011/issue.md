@@ -1,0 +1,1 @@
+parse_csv_rows splits by raw newline character, breaking cells that contain quoted newlines.

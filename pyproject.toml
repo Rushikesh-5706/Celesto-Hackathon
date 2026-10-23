@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reprobox"
+version = "0.1.0"
+description = "Celesto-powered bug reproduction agent"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Rushikesh Kunisetty", email = "rushikunisetty5605@gmail.com"}]
+readme = "README.md"
+
+[project.scripts]
+reprobox = "reprobox.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+exclude = ["fixtures", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]  # long lines sometimes unavoidable in config strings
+
+[tool.ruff.lint.isort]
+known-first-party = ["reprobox"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

@@ -1,0 +1,10 @@
+{
+  "case_id": "case-001",
+  "title": "Paginator omits final item on exact page boundary",
+  "bug_class": "off-by-one on last page of paginator",
+  "target_symbol": "paginate",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "paginate/core.py"
+  ]
+}

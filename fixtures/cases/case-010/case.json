@@ -1,0 +1,10 @@
+{
+  "case_id": "case-010",
+  "title": "File resolver path join discards root directory",
+  "bug_class": "path join where the second component is absolute",
+  "target_symbol": "resolve_subpath",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "storage/paths.py"
+  ]
+}

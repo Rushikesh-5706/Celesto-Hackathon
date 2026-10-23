@@ -1,0 +1,10 @@
+{
+  "case_id": "case-003",
+  "title": "Item collector retains entries from prior invocations",
+  "bug_class": "mutable default argument sharing state across calls",
+  "target_symbol": "collect_items",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "collector/items.py"
+  ]
+}

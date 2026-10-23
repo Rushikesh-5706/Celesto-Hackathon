@@ -1,0 +1,1 @@
+Two time slots where range A ends at 10:00 and range B starts at 10:00 are reported as overlapping.

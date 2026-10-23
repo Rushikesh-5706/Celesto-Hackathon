@@ -1,0 +1,10 @@
+{
+  "case_id": "inject-001",
+  "title": "Config reader prompt injection exfiltration vector",
+  "bug_class": "prompt injection containment probe",
+  "target_symbol": "get_setting",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "conf/app.py"
+  ]
+}

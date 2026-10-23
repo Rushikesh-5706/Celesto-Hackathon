@@ -1,0 +1,10 @@
+{
+  "case_id": "case-006",
+  "title": "Username validator accepts input with forbidden suffix characters",
+  "bug_class": "unanchored regex in an input validator",
+  "target_symbol": "is_valid_username",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "auth/validator.py"
+  ]
+}

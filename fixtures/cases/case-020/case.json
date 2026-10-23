@@ -1,0 +1,10 @@
+{
+  "case_id": "case-020",
+  "title": "Query parameter parser discards multiple occurrences of same key",
+  "bug_class": "query string parsing with repeated keys",
+  "target_symbol": "parse_params",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "url/query.py"
+  ]
+}

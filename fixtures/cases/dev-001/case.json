@@ -1,0 +1,10 @@
+{
+  "case_id": "dev-001",
+  "title": "Range accumulator misses stop boundary",
+  "bug_class": "range stop bound off-by-one",
+  "target_symbol": "sum_range",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "pkg/calc.py"
+  ]
+}

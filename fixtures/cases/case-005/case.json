@@ -1,0 +1,10 @@
+{
+  "case_id": "case-005",
+  "title": "Slug generator produces empty string on accented characters",
+  "bug_class": "unicode normalization in slug generation",
+  "target_symbol": "slugify",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "slugger/slug.py"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "case_id": "dev-002",
+  "title": "String trimmer leaves trailing newline",
+  "bug_class": "whitespace strip omitting newline",
+  "target_symbol": "clean_line",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "pkg/text.py"
+  ]
+}

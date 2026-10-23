@@ -1,0 +1,10 @@
+{
+  "case_id": "case-011",
+  "title": "CSV parser splits rows on multiline quoted fields",
+  "bug_class": "CSV field with an embedded newline",
+  "target_symbol": "parse_csv_rows",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "csvtool/parser.py"
+  ]
+}

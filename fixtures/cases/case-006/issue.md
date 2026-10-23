@@ -1,0 +1,1 @@
+is_valid_username('john!@#') returns True because regex pattern is not anchored at string boundaries.

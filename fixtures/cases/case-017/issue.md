@@ -1,0 +1,1 @@
+tokenize_words('hello   world') includes empty strings between consecutive space delimiters.

@@ -1,0 +1,10 @@
+{
+  "case_id": "case-013",
+  "title": "Schedule calculation returns negative hour on backwards shift",
+  "bug_class": "negative modulo in a schedule calculation",
+  "target_symbol": "shift_hour",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "schedule/clock.py"
+  ]
+}

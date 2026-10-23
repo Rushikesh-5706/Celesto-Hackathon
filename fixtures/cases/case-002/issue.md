@@ -1,0 +1,1 @@
+is_expired raises TypeError when comparing an expiration timestamp with UTC timezone against utcnow().

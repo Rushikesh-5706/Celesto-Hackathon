@@ -1,0 +1,1 @@
+get_backoff_delay(attempt=1) returns 2.0s instead of base delay 1.0s.

@@ -1,0 +1,10 @@
+{
+  "case_id": "case-009",
+  "title": "Leaderboard tiebreaker flips order unpredictably",
+  "bug_class": "unstable ordering of ties in a ranking",
+  "target_symbol": "rank_players",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "game/ranking.py"
+  ]
+}

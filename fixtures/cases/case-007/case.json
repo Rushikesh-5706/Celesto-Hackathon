@@ -1,0 +1,10 @@
+{
+  "case_id": "case-007",
+  "title": "Date overlap check treats touching endpoints as overlapping",
+  "bug_class": "inclusive versus exclusive bounds in date range overlap",
+  "target_symbol": "ranges_overlap",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "scheduler/ranges.py"
+  ]
+}

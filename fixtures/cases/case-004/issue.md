@@ -1,0 +1,1 @@
+Standard invoice rounding requires rounding half up to nearest cent, but 2.5 rounds down to 2 instead of 3.

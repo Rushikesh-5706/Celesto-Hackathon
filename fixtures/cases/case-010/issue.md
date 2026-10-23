@@ -1,0 +1,1 @@
+resolve_subpath('/var/data', '/user/file.txt') discards '/var/data' because the second argument starts with a slash.

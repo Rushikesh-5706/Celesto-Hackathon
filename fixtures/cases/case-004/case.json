@@ -1,0 +1,10 @@
+{
+  "case_id": "case-004",
+  "title": "Price rounding rounds 2.5 cents downward",
+  "bug_class": "currency rounding (half-even versus half-up)",
+  "target_symbol": "round_cents",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "billing/currency.py"
+  ]
+}

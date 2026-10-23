@@ -1,0 +1,10 @@
+{
+  "case_id": "case-015",
+  "title": "LRU cache evicts most recently accessed entry instead of oldest",
+  "bug_class": "cache eviction order",
+  "target_symbol": "SimpleLRU",
+  "expected_exception": "AssertionError",
+  "source_files": [
+    "cache/lru.py"
+  ]
+}

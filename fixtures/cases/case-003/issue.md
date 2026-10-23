@@ -1,0 +1,1 @@
+Subsequent calls to collect_items without specifying an existing list accumulate values from previous calls.

@@ -1,0 +1,1 @@
+shift_hour(1, -3) produces -2 instead of wrapping properly to 22:00 in 24-hour time.

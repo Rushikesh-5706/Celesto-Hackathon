@@ -1,0 +1,1 @@
+When two players have identical scores, rank_players should break ties deterministically by player name ascending.

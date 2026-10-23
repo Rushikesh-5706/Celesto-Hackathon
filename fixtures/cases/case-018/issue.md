@@ -1,0 +1,1 @@
+format_percentage(0.6666) returns '66%' because int conversion truncates rather than rounds.
