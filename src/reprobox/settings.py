@@ -85,5 +85,5 @@ class Settings:
     api_port: int = _env_int("API_PORT", 8080)
 
 
-# Module-level singleton — imported everywhere as `from reprobox.settings import settings`.
+# Module-level singleton: imported everywhere as `from reprobox.settings import settings`.
 settings = Settings()

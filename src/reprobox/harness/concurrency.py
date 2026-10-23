@@ -88,8 +88,7 @@ def run_concurrency_harness(
     )
 
     contract_jobs = [
-        {"sandbox_name": r["sandbox_name"], "started_at": r["started_at"]}
-        for r in job_results
+        {"sandbox_name": r["sandbox_name"], "started_at": r["started_at"]} for r in job_results
     ]
 
     result = {

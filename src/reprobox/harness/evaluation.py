@@ -80,7 +80,10 @@ def run_evaluation_batch(
 
     for idx, case_id in enumerate(cases_to_run, 1):
         if case_id in completed_cases:
-            print(f"[{idx}/{len(cases_to_run)}] Skipping already completed {case_id} in {batch}", flush=True)
+            print(
+                f"[{idx}/{len(cases_to_run)}] Skipping already completed {case_id} in {batch}",
+                flush=True,
+            )
             logger.info("Skipping already completed case %s in batch %s", case_id, batch)
             continue
 
@@ -88,7 +91,10 @@ def run_evaluation_batch(
         run_id = f"run-eval-{case_id}-{sandbox_name[4:]}"
         t_start = datetime.now(UTC).isoformat()
 
-        print(f"\n[{idx}/{len(cases_to_run)}] Starting eval run for {case_id} (sandbox={sandbox_name})...", flush=True)
+        print(
+            f"\n[{idx}/{len(cases_to_run)}] Starting eval run for {case_id} (sandbox={sandbox_name})...",
+            flush=True,
+        )
         logger.info("Starting graded eval run for %s (%s)...", case_id, sandbox_name)
         try:
             res = run_pipeline(
@@ -97,7 +103,10 @@ def run_evaluation_batch(
                 case_id=case_id,
                 provider=prov,
             )
-            print(f"[{idx}/{len(cases_to_run)}] {case_id} finished: success={res.success} in {res.wall_clock_s:.1f}s (cost=${res.cost_usd:.5f})", flush=True)
+            print(
+                f"[{idx}/{len(cases_to_run)}] {case_id} finished: success={res.success} in {res.wall_clock_s:.1f}s (cost=${res.cost_usd:.5f})",
+                flush=True,
+            )
 
             record = {
                 "batch_id": batch,

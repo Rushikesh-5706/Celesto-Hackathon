@@ -29,7 +29,9 @@ class CaseFixture:
 
         meta: dict[str, Any] = json.loads(case_json_path.read_text(encoding="utf-8"))
         issue_file = case_dir / "issue.md"
-        issue_text = issue_file.read_text(encoding="utf-8") if issue_file.exists() else meta.get("title", "")
+        issue_text = (
+            issue_file.read_text(encoding="utf-8") if issue_file.exists() else meta.get("title", "")
+        )
 
         author_probe = case_dir / "author_probe" / "test_probe.py"
         return cls(

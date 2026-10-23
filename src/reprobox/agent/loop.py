@@ -58,7 +58,9 @@ class AgentLoop:
             return text[:AGENT_TOOL_TRUNCATE] + "\n...[truncated]"
         return text
 
-    def run(self, issue_title: str, issue_body: str, max_turns: int | None = None) -> AgentLoopResult:
+    def run(
+        self, issue_title: str, issue_body: str, max_turns: int | None = None
+    ) -> AgentLoopResult:
         turns_limit = max_turns or settings.agent_max_turns
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -111,20 +113,24 @@ class AgentLoop:
                     summary = resp.content
                     break
                 # If no tool called, prompt continuation
-                messages.append({
-                    "role": "user",
-                    "content": "Please continue your investigation and author the test in `/workspace/case/tests/test_issue_repro.py`.",
-                })
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": "Please continue your investigation and author the test in `/workspace/case/tests/test_issue_repro.py`.",
+                    }
+                )
                 continue
 
             for tc in resp.tool_calls:
                 tool_output = self._execute_tool(tc.name, tc.arguments)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "name": tc.name,
-                    "content": self._truncate(tool_output),
-                })
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "name": tc.name,
+                        "content": self._truncate(tool_output),
+                    }
+                )
                 if tc.name == "finish":
                     finished = True
                     summary = str(tc.arguments.get("summary", ""))
@@ -234,7 +240,11 @@ class AgentLoop:
                 return f"Command blocked by security guard (rule: {decision.rule_id}): {decision.reason}"
 
             res = self.provider.run(self.computer, cmd)
-            output = res.stdout if res.exit_code == 0 else f"{res.stdout}\n{res.stderr} (exit code: {res.exit_code})"
+            output = (
+                res.stdout
+                if res.exit_code == 0
+                else f"{res.stdout}\n{res.stderr} (exit code: {res.exit_code})"
+            )
             return output.strip() or "[no output]"
 
         return f"Unknown tool: {name}"

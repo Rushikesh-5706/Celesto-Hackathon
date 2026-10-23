@@ -112,13 +112,24 @@ class LLMClient:
 
                 if resp.status_code == 429:
                     self.rate_limit_count += 1
-                    logger.warning("Rate limit hit (attempt %d/%d). Backing off %.1fs...", attempt, max_retries, backoff)
+                    logger.warning(
+                        "Rate limit hit (attempt %d/%d). Backing off %.1fs...",
+                        attempt,
+                        max_retries,
+                        backoff,
+                    )
                     time.sleep(backoff)
                     backoff *= 2.0
                     continue
 
                 if resp.status_code >= 500:
-                    logger.warning("LLM server error %d (attempt %d/%d). Backing off %.1fs...", resp.status_code, attempt, max_retries, backoff)
+                    logger.warning(
+                        "LLM server error %d (attempt %d/%d). Backing off %.1fs...",
+                        resp.status_code,
+                        attempt,
+                        max_retries,
+                        backoff,
+                    )
                     time.sleep(backoff)
                     backoff *= 2.0
                     continue
@@ -128,7 +139,9 @@ class LLMClient:
 
             except httpx.RequestError as exc:
                 last_error = exc
-                logger.warning("HTTP connection error: %s (attempt %d/%d)", exc, attempt, max_retries)
+                logger.warning(
+                    "HTTP connection error: %s (attempt %d/%d)", exc, attempt, max_retries
+                )
                 time.sleep(backoff)
                 backoff *= 2.0
 

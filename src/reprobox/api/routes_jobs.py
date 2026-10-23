@@ -26,16 +26,22 @@ def _check_provider_availability() -> str | None:
     if not settings.celesto_api_key:
         return "CELESTO_API_KEY environment variable is not configured"
     import importlib.util
+
     if importlib.util.find_spec("celesto") is None:
         return "Celesto Python SDK is not installed or importable"
     return None
 
 
-def _run_pipeline_background(run_id: str, sandbox_name: str, case_id: str, fault_step: int | None) -> None:
+def _run_pipeline_background(
+    run_id: str, sandbox_name: str, case_id: str, fault_step: int | None
+) -> None:
     """Execute pipeline in a detached background thread."""
     try:
         from reprobox.pipeline.orchestrator import run_pipeline
-        run_pipeline(run_id=run_id, sandbox_name=sandbox_name, case_id=case_id, fault_step=fault_step)
+
+        run_pipeline(
+            run_id=run_id, sandbox_name=sandbox_name, case_id=case_id, fault_step=fault_step
+        )
     except Exception:
         repo.update_state(run_id, "failed", outcome="failed")
 
@@ -91,7 +97,9 @@ def get_job(run_id: str) -> JSONResponse:
     """Check the status and outcome of a job."""
     run = repo.get_run(run_id)
     if not run:
-        return JSONResponse(status_code=404, content={"error": "not_found", "detail": f"Job '{run_id}' not found"})
+        return JSONResponse(
+            status_code=404, content={"error": "not_found", "detail": f"Job '{run_id}' not found"}
+        )
 
     return JSONResponse(
         status_code=200,

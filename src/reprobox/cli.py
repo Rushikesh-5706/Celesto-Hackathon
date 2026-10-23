@@ -28,7 +28,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     # serve
     serve_parser = subparsers.add_parser("serve", help="Start the API control plane")
-    serve_parser.add_argument("--port", type=int, default=settings.api_port, help="Port to listen on")
+    serve_parser.add_argument(
+        "--port", type=int, default=settings.api_port, help="Port to listen on"
+    )
     serve_parser.add_argument("--host", default="0.0.0.0", help="Host address")
 
     # eval

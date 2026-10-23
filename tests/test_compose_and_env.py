@@ -18,7 +18,9 @@ def test_compose_yaml_structure_and_healthchecks():
 
     assert "services" in data, "compose must define services"
     services = data["services"]
-    assert "api" in services and "ledger" in services, "compose must contain api and ledger services"
+    assert (
+        "api" in services and "ledger" in services
+    ), "compose must contain api and ledger services"
 
     # Ledger checks
     ledger = services["ledger"]
@@ -68,4 +70,6 @@ def test_env_example_parity_with_settings():
             continue
         env_key = attr.upper()
         # Some attributes map to upper env names
-        assert env_key in example_keys, f"Settings attribute {attr} ({env_key}) missing from .env.example"
+        assert (
+            env_key in example_keys
+        ), f"Settings attribute {attr} ({env_key}) missing from .env.example"

@@ -73,7 +73,9 @@ def get_run(run_id: str) -> JSONResponse:
     """Fetch run by ID."""
     run = repo.get_run(run_id)
     if not run:
-        return JSONResponse(status_code=404, content={"error": "not_found", "detail": f"Run '{run_id}' not found"})
+        return JSONResponse(
+            status_code=404, content={"error": "not_found", "detail": f"Run '{run_id}' not found"}
+        )
     return JSONResponse(status_code=200, content=run.to_dict())
 
 
@@ -82,6 +84,8 @@ def get_run_events(run_id: str) -> JSONResponse:
     """List lifecycle events for a run."""
     run = repo.get_run(run_id)
     if not run:
-        return JSONResponse(status_code=404, content={"error": "not_found", "detail": f"Run '{run_id}' not found"})
+        return JSONResponse(
+            status_code=404, content={"error": "not_found", "detail": f"Run '{run_id}' not found"}
+        )
     events = repo.list_events(run_id)
     return JSONResponse(status_code=200, content=[e.to_dict() for e in events])

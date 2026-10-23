@@ -24,7 +24,9 @@ def new_sandbox_name(exists_fn: Callable[[str], bool] | None = None, max_attempt
     If exists_fn is provided, checks collisions and retries up to max_attempts.
     """
     for _ in range(max_attempts):
-        suffix = "".join(secrets.choice(SANDBOX_NAME_ALPHABET) for _ in range(SANDBOX_NAME_SUFFIX_LEN))
+        suffix = "".join(
+            secrets.choice(SANDBOX_NAME_ALPHABET) for _ in range(SANDBOX_NAME_SUFFIX_LEN)
+        )
         name = f"{SANDBOX_NAME_PREFIX}{suffix}"
         if exists_fn is None or not exists_fn(name):
             return name

@@ -1,4 +1,4 @@
-"""Central constants for Reprobox — imported by tests, not redefined there."""
+"""Central constants for Reprobox: imported by tests, not redefined there."""
 
 from __future__ import annotations
 
@@ -22,16 +22,16 @@ SANDBOX_NAME_ALPHABET: str = "abcdefghijklmnopqrstuvwxyz0123456789"
 
 # The 10 pipeline step names, in order. Index 0 = step 1.
 PIPELINE_STEPS: list[str] = [
-    "provision",       # 1
-    "boot_probe",      # 2
-    "stage_case",      # 3
-    "baseline",        # 4
-    "agent_loop",      # 5
-    "persist_test",    # 6
-    "execute_test",    # 7
-    "classify_failure", # 8
-    "verify_reference", # 9
-    "emit_proof",      # 10
+    "provision",  # 1
+    "boot_probe",  # 2
+    "stage_case",  # 3
+    "baseline",  # 4
+    "agent_loop",  # 5
+    "persist_test",  # 6
+    "execute_test",  # 7
+    "classify_failure",  # 8
+    "verify_reference",  # 9
+    "emit_proof",  # 10
 ]
 
 TOTAL_STEPS: int = len(PIPELINE_STEPS)
@@ -88,16 +88,18 @@ ORIGIN_AGENT: str = "agent"
 ALLOWED_PROVIDERS: frozenset[str] = frozenset(["celesto_sandbox"])
 
 # Report file names served by GET /api/reports/{name}.
-REPORT_WHITELIST: frozenset[str] = frozenset([
-    "problem.json",
-    "capabilities.json",
-    "lifecycle.json",
-    "reliability.json",
-    "postmortem.md",
-    "containment.json",
-    "failure_policy.json",
-    "failure_trace.jsonl",
-    "concurrency.json",
-    "commands.jsonl",
-    "README.md",
-])
+REPORT_WHITELIST: frozenset[str] = frozenset(
+    [
+        "problem.json",
+        "capabilities.json",
+        "lifecycle.json",
+        "reliability.json",
+        "postmortem.md",
+        "containment.json",
+        "failure_policy.json",
+        "failure_trace.jsonl",
+        "concurrency.json",
+        "commands.jsonl",
+        "README.md",
+    ]
+)

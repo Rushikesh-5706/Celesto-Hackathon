@@ -70,7 +70,9 @@ def test_commands_audit_log_contract():
 
     for idx, line in enumerate(lines, 1):
         record = json.loads(line)
-        assert list(record.keys()) == required_keys, f"Line {idx} does not have exact 5 keys in order"
+        assert (
+            list(record.keys()) == required_keys
+        ), f"Line {idx} does not have exact 5 keys in order"
         assert record["decision"] in ("allow", "block")
         if record["decision"] == "block":
             has_block = True

@@ -26,6 +26,7 @@ class CelestoProvider(ComputerProvider):
     def _ensure_sdk(self) -> Any:
         try:
             from celesto import Computer
+
             return Computer
         except ImportError as exc:
             raise RuntimeError("Celesto SDK is not installed or import failed") from exc
@@ -78,7 +79,13 @@ class CelestoProvider(ComputerProvider):
                 is_transient = any(ind in err_msg for ind in transient_indicators)
                 if is_transient and attempt < max_attempts - 1:
                     wait_s = 2.0 * (attempt + 1)
-                    logger.warning("Transient Celesto error (%s), retrying in %.1fs (attempt %d/%d)...", exc, wait_s, attempt + 1, max_attempts)
+                    logger.warning(
+                        "Transient Celesto error (%s), retrying in %.1fs (attempt %d/%d)...",
+                        exc,
+                        wait_s,
+                        attempt + 1,
+                        max_attempts,
+                    )
                     time.sleep(wait_s)
                     continue
                 raise
@@ -101,7 +108,10 @@ class CelestoProvider(ComputerProvider):
             "    p.write_bytes(base64.b64decode(b64_bytes))\n"
         )
         b64_script = base64.b64encode(guest_code.encode("utf-8")).decode("ascii")
-        res = self.run(computer, f"python3 -c \"import base64; exec(base64.b64decode('{b64_script}').decode())\"")
+        res = self.run(
+            computer,
+            f"python3 -c \"import base64; exec(base64.b64decode('{b64_script}').decode())\"",
+        )
         if res.exit_code != 0:
             raise RuntimeError(f"Failed to batch write files: {res.stderr}")
 
@@ -134,6 +144,7 @@ class CelestoProvider(ComputerProvider):
     def exists(self, computer: Any) -> bool:
         """Check if computer exists in cloud active list."""
         from celesto._providers.cloud import list_cloud_computers
+
         cid = getattr(computer, "id", "")
         if not cid:
             return False
@@ -143,5 +154,6 @@ class CelestoProvider(ComputerProvider):
     def list_prefixed(self, prefix: str = "") -> list[str]:
         """List active computer ids."""
         from celesto._providers.cloud import list_cloud_computers
+
         items, _ = list_cloud_computers()
         return [str(item["id"]) for item in items if str(item.get("id", "")).startswith(prefix)]

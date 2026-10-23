@@ -101,15 +101,23 @@ def run_pipeline(
             t0 = time.monotonic()
             emit_event("step_started", {"step": 1, "name": "provision"})
             step_timings["provision"] = time.monotonic() - t0
-            emit_event("step_completed", {"step": 1, "name": "provision", "computer_id": getattr(computer, "id", None)})
+            emit_event(
+                "step_completed",
+                {"step": 1, "name": "provision", "computer_id": getattr(computer, "id", None)},
+            )
 
             # Step 2: boot_probe
             t0 = time.monotonic()
             emit_event("step_started", {"step": 2, "name": "boot_probe"})
-            boot_to_ready_s = step_boot_probe(prov, computer, sandbox_name, run_id, timeout_s=settings.step_timeout_s)
+            boot_to_ready_s = step_boot_probe(
+                prov, computer, sandbox_name, run_id, timeout_s=settings.step_timeout_s
+            )
             step_timings["boot_probe"] = time.monotonic() - t0
             repo.update_state(run_id, "ready")
-            emit_event("step_completed", {"step": 2, "name": "boot_probe", "boot_to_ready_s": boot_to_ready_s})
+            emit_event(
+                "step_completed",
+                {"step": 2, "name": "boot_probe", "boot_to_ready_s": boot_to_ready_s},
+            )
 
             # Step 3: stage_case
             t0 = time.monotonic()
@@ -117,7 +125,9 @@ def run_pipeline(
             emit_event("step_started", {"step": 3, "name": "stage_case"})
             initial_manifest = step_stage_case(prov, computer, sandbox_name, run_id, case)
             step_timings["stage_case"] = time.monotonic() - t0
-            emit_event("step_completed", {"step": 3, "name": "stage_case", "files": len(initial_manifest)})
+            emit_event(
+                "step_completed", {"step": 3, "name": "stage_case", "files": len(initial_manifest)}
+            )
 
             # Step 4: baseline
             t0 = time.monotonic()
@@ -141,14 +151,26 @@ def run_pipeline(
             step_timings["agent_loop"] = time.monotonic() - t0
             if not agent_ok:
                 if fault_step == 7 and case.author_probe_path and case.author_probe_path.exists():
-                    logger.warning("Agent loop rate-limited during fault injection run; staging author probe for Step 7 recovery test.")
+                    logger.warning(
+                        "Agent loop rate-limited during fault injection run; staging author probe for Step 7 recovery test."
+                    )
                     prov.write_file(computer, TEST_FILE_PATH, case.author_probe_path.read_bytes())
                     agent_ok = True
                 else:
                     failure_reason = agent_err
-                    emit_event("step_failed", {"step": 5, "name": "agent_loop", "reason": failure_reason})
+                    emit_event(
+                        "step_failed", {"step": 5, "name": "agent_loop", "reason": failure_reason}
+                    )
                     raise RuntimeError(f"Agent loop failed: {agent_err}")
-            emit_event("step_completed", {"step": 5, "name": "agent_loop", "prompt_tokens": p_tok, "completion_tokens": c_tok})
+            emit_event(
+                "step_completed",
+                {
+                    "step": 5,
+                    "name": "agent_loop",
+                    "prompt_tokens": p_tok,
+                    "completion_tokens": c_tok,
+                },
+            )
 
             # Step 6: persist_test
             t0 = time.monotonic()
@@ -156,7 +178,10 @@ def run_pipeline(
             test_bytes = prov.read_file(computer, TEST_FILE_PATH)
             test_sha = hashlib.sha256(test_bytes).hexdigest()
             step_timings["persist_test"] = time.monotonic() - t0
-            emit_event("step_completed", {"step": 6, "name": "persist_test", "sha256": test_sha, "bytes": len(test_bytes)})
+            emit_event(
+                "step_completed",
+                {"step": 6, "name": "persist_test", "sha256": test_sha, "bytes": len(test_bytes)},
+            )
 
             # Inject fault if configured
             inject_flag = ""
@@ -213,9 +238,20 @@ def run_pipeline(
             step_timings["classify_failure"] = time.monotonic() - t0
             if not classification.passed:
                 failure_reason = classification.reason_code
-                emit_event("step_failed", {"step": 8, "name": "classify_failure", "reason": failure_reason, "details": classification.details})
+                emit_event(
+                    "step_failed",
+                    {
+                        "step": 8,
+                        "name": "classify_failure",
+                        "reason": failure_reason,
+                        "details": classification.details,
+                    },
+                )
                 raise RuntimeError(f"Classification failed: {classification.reason_code}")
-            emit_event("step_completed", {"step": 8, "name": "classify_failure", "reason_code": classification.reason_code})
+            emit_event(
+                "step_completed",
+                {"step": 8, "name": "classify_failure", "reason_code": classification.reason_code},
+            )
 
             # Step 9: verify_reference
             t0 = time.monotonic()
@@ -224,7 +260,9 @@ def run_pipeline(
             step_timings["verify_reference"] = time.monotonic() - t0
             if not ref_ok:
                 failure_reason = "reference_still_fails"
-                emit_event("step_failed", {"step": 9, "name": "verify_reference", "reason": failure_reason})
+                emit_event(
+                    "step_failed", {"step": 9, "name": "verify_reference", "reason": failure_reason}
+                )
                 raise RuntimeError("Authored test still fails on reference fix")
             emit_event("step_completed", {"step": 9, "name": "verify_reference"})
 
@@ -246,7 +284,9 @@ def run_pipeline(
                 "expected_exception": case.expected_exception,
                 "author_turns": prompt_tokens,
             }
-            (proof_dir / "proof.json").write_text(json.dumps(proof_meta, indent=2), encoding="utf-8")
+            (proof_dir / "proof.json").write_text(
+                json.dumps(proof_meta, indent=2), encoding="utf-8"
+            )
 
             step_timings["emit_proof"] = time.monotonic() - t0
             emit_event("step_completed", {"step": 10, "name": "emit_proof"})
@@ -272,13 +312,16 @@ def run_pipeline(
         # Update ledger final state
         try:
             repo.update_state(run_id, "deleted", outcome=outcome)
-            emit_event("run_completed", {
-                "outcome": outcome,
-                "success": success,
-                "wall_clock_s": wall_clock_s,
-                "cost_usd": total_cost_usd,
-                "failure_reason": failure_reason,
-            })
+            emit_event(
+                "run_completed",
+                {
+                    "outcome": outcome,
+                    "success": success,
+                    "wall_clock_s": wall_clock_s,
+                    "cost_usd": total_cost_usd,
+                    "failure_reason": failure_reason,
+                },
+            )
             emit_event("cleanup_started", {})
             emit_event("cleanup_completed", {})
         except Exception as e:

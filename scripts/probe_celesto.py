@@ -78,7 +78,7 @@ def make_computer(**kwargs: Any) -> Any:
 
 
 def probe_p1() -> dict[str, Any]:
-    log_section("P1: create, run echo, delete — naming and run return shape")
+    log_section("P1: create, run echo, delete :  naming and run return shape")
     from celesto import Computer
 
     result: dict[str, Any] = {}
@@ -103,14 +103,14 @@ def probe_p1() -> dict[str, Any]:
     result["name_note"] = (
         "Computer() has no 'name=' parameter. The cloud API assigns its own id (UUID). "
         "Our naming.py will use Computer.id as the sandbox_name for the ledger after "
-        "prepending our own sbx- label externally — but the SDK's own id is what the "
+        "prepending our own sbx- label externally :  but the SDK's own id is what the "
         "cloud uses. We will store computer.id as the sandbox identifier."
     )
     log(f"  can_set_name={result['can_set_name']}")
     log(f"  name_note: {result['name_note']}")
 
     c.delete()
-    log("  P1 DONE — computer deleted")
+    log("  P1 DONE :  computer deleted")
     return result
 
 
@@ -135,7 +135,7 @@ def probe_p2() -> dict[str, Any]:
             result[cmd] = {"exit_code": r["exit_code"], "stdout": r["stdout"][:200]}
     finally:
         c.delete()
-        log("  P2 DONE — computer deleted")
+        log("  P2 DONE :  computer deleted")
     return result
 
 
@@ -176,18 +176,22 @@ def probe_p3() -> dict[str, Any]:
         r2 = run_probe(c, "sha256sum /workspace/probe_test/hello.txt")
         result["sha256_match"] = expected_sha in r2["stdout"]
         log(f"  expected sha256: {expected_sha}")
-        log(f"  base64_run_works={result['base64_run_works']}  sha256_match={result['sha256_match']}")
+        log(
+            f"  base64_run_works={result['base64_run_works']}  sha256_match={result['sha256_match']}"
+        )
 
         result["winner"] = "base64_over_run"
-        result["note"] = "Neither files.write nor upload_file is available on the cloud Computer. base64-over-run works."
+        result["note"] = (
+            "Neither files.write nor upload_file is available on the cloud Computer. base64-over-run works."
+        )
     finally:
         c.delete()
-        log("  P3 DONE — computer deleted")
+        log("  P3 DONE :  computer deleted")
     return result
 
 
 def probe_p4() -> dict[str, Any]:
-    log_section("P4: persistence — stop/start file survival")
+    log_section("P4: persistence :  stop/start file survival")
     from celesto import Computer
 
     result: dict[str, Any] = {}
@@ -221,12 +225,12 @@ def probe_p4() -> dict[str, Any]:
         log(f"  P4 ERROR: {exc}")
     finally:
         c.delete()
-        log("  P4 DONE — computer deleted")
+        log("  P4 DONE :  computer deleted")
     return result
 
 
 def probe_p5() -> dict[str, Any]:
-    log_section("P5: network policy — no_internet option")
+    log_section("P5: network policy :  no_internet option")
     from _celesto_cloud_api.models.network_policy import NetworkPolicy
     from _celesto_cloud_api.models.network_policy_mode import NetworkPolicyMode
     from celesto import Computer
@@ -234,7 +238,7 @@ def probe_p5() -> dict[str, Any]:
     result: dict[str, Any] = {}
     try:
         # The Python SDK accepts network_policy= kwarg passed through to _CloudComputer
-        # which passes it to ComputerCreateRequest. Let's try.
+        # which passes it to ComputerCreateRequest for sandbox creation.
         c = Computer(provider="cloud", network_policy=NetworkPolicy(mode=NetworkPolicyMode.CLOSED))
         c.start()
         log(f"  computer.id={c.id} created with network_policy=closed")
@@ -246,7 +250,9 @@ def probe_p5() -> dict[str, Any]:
             # Run still works (we just proved it by calling run)
             r2 = run_probe(c, "echo still_works")
             result["run_still_works"] = r2["ok"]
-            log(f"  curl_blocked={result['curl_blocked']}  run_still_works={result['run_still_works']}")
+            log(
+                f"  curl_blocked={result['curl_blocked']}  run_still_works={result['run_still_works']}"
+            )
             result["supported"] = True
         finally:
             c.delete()
@@ -259,7 +265,7 @@ def probe_p5() -> dict[str, Any]:
 
 
 def probe_p6() -> dict[str, Any]:
-    log_section("P6: safety hooks — Callback on_pre_run with cloud Computer")
+    log_section("P6: safety hooks :  Callback on_pre_run with cloud Computer")
     from celesto import Callback, CommandBlockedError, Computer
 
     result: dict[str, Any] = {}
@@ -320,7 +326,7 @@ def probe_p6() -> dict[str, Any]:
 
 
 def probe_p7() -> dict[str, Any]:
-    log_section("P7: snapshots on cloud — expect not supported")
+    log_section("P7: snapshots on cloud :  expect not supported")
     from celesto import Computer
 
     result: dict[str, Any] = {}
@@ -339,11 +345,13 @@ def probe_p7() -> dict[str, Any]:
                 result["snapshot_error"] = str(exc)[:300]
                 result["snapshot_succeeded"] = False
         else:
-            result["note"] = "Computer class has no snapshot() method; snapshots are not exposed on cloud."
+            result["note"] = (
+                "Computer class has no snapshot() method; snapshots are not exposed on cloud."
+            )
         log(f"  snapshot_method_exists={has_snapshot}")
     finally:
         c.delete()
-        log("  P7 DONE — computer deleted")
+        log("  P7 DONE :  computer deleted")
     return result
 
 
@@ -373,12 +381,12 @@ def probe_p8() -> dict[str, Any]:
     result["visible_after_delete"] = cid in ids_after
     log(f"  visible in list after delete: {result['visible_after_delete']}")
     result["deletion_confirmed"] = not result["visible_after_delete"]
-    log(f"  P8 DONE — deletion_confirmed={result['deletion_confirmed']}")
+    log(f"  P8 DONE :  deletion_confirmed={result['deletion_confirmed']}")
     return result
 
 
 def probe_p9() -> dict[str, Any]:
-    log_section("P9: name collision — create two computers with same idempotency key")
+    log_section("P9: name collision :  create two computers with same idempotency key")
     # The cloud API doesn't support custom names; idempotency_key is per-create.
     # We create two computers sequentially and record what happens.
     from celesto import Computer
@@ -464,7 +472,7 @@ def probe_p10() -> dict[str, Any]:
 
 
 def probe_p11() -> dict[str, Any]:
-    log_section("P11: LLM — GET /models and tool-call round trip")
+    log_section("P11: LLM :  GET /models and tool-call round trip")
     import json
 
     import httpx
@@ -493,7 +501,9 @@ def probe_p11() -> dict[str, Any]:
         result["model_ids_sample"] = model_ids[:5]
 
         # Pick a model for tool calling
-        preferred = model_id or next((m for m in model_ids if "llama" in m.lower()), model_ids[0] if model_ids else None)
+        preferred = model_id or next(
+            (m for m in model_ids if "llama" in m.lower()), model_ids[0] if model_ids else None
+        )
         result["chosen_model"] = preferred
     except Exception as exc:
         result["models_error"] = str(exc)[:300]
@@ -643,16 +653,20 @@ def main() -> None:
     claim_persistence = bool(p4.get("file_survived") and p4.get("resume_ready_s") is not None)
     claim_network_policy = bool(p5.get("supported") and p5.get("curl_blocked"))
 
-    log(f"  persistence:    {'CLAIMED' if claim_persistence else 'NOT CLAIMED'}  (p4.file_survived={p4.get('file_survived')})")
+    log(
+        f"  persistence:    {'CLAIMED' if claim_persistence else 'NOT CLAIMED'}  (p4.file_survived={p4.get('file_survived')})"
+    )
     log("  safety_hooks:   CLAIMED  (guard.py intercepts all commands)")
-    log(f"  network_policy: {'CLAIMED' if claim_network_policy else 'NOT CLAIMED'}  (p5.supported={p5.get('supported')})")
+    log(
+        f"  network_policy: {'CLAIMED' if claim_network_policy else 'NOT CLAIMED'}  (p5.supported={p5.get('supported')})"
+    )
     log("  snapshots:      NOT CLAIMED  (cloud provider has no snapshot API)")
 
     log_section("BLOCKING CHECK")
     p1 = results.get("p1", {})
     p2 = results.get("p2", {})
     if "FATAL" in p1:
-        log("  BLOCK: P1 fatal — cannot create/run on cloud computer")
+        log("  BLOCK: P1 fatal :  cannot create/run on cloud computer")
         sys.exit(1)
 
     python_ok = p2.get("python3 --version", {}).get("exit_code") == 0

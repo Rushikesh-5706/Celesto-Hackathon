@@ -15,6 +15,7 @@ class FakeRecoveryProvider:
 
     def run(self, comp, cmd, timeout=60):
         from reprobox.sandbox.provider import RunResult
+
         return RunResult(stdout="Python 3.12", stderr="", exit_code=0, computer_id="c1")
 
     def read_file(self, comp, path):
@@ -65,9 +66,7 @@ def test_recovery_escalates_on_integrity_failure():
         event_callback=lambda ev, payload: events.append((ev, payload)),
     )
 
-    result = handler.handle_step7_failure(
-        step7_executor=lambda c: (True, "", "")
-    )
+    result = handler.handle_step7_failure(step7_executor=lambda c: (True, "", ""))
 
     assert result.recovered is False
     assert result.policy_applied == "fresh_required"

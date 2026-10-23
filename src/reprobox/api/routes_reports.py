@@ -33,7 +33,9 @@ def list_reports() -> JSONResponse:
         path = _resolve_report_path(name)
         if path and path.exists():
             available.append(name)
-    return JSONResponse(status_code=200, content={"reports": available, "whitelist": sorted(REPORT_WHITELIST)})
+    return JSONResponse(
+        status_code=200, content={"reports": available, "whitelist": sorted(REPORT_WHITELIST)}
+    )
 
 
 def _resolve_report_path(name: str) -> Path | None:
@@ -54,11 +56,16 @@ def _resolve_report_path(name: str) -> Path | None:
 def get_report(name: str):
     """Serve a specific report by name."""
     if name not in REPORT_WHITELIST:
-        return JSONResponse(status_code=404, content={"error": "not_found", "detail": f"Report '{name}' not found"})
+        return JSONResponse(
+            status_code=404, content={"error": "not_found", "detail": f"Report '{name}' not found"}
+        )
 
     path = _resolve_report_path(name)
     if not path or not path.exists():
-        return JSONResponse(status_code=404, content={"error": "not_found", "detail": f"Report '{name}' has not been generated yet"})
+        return JSONResponse(
+            status_code=404,
+            content={"error": "not_found", "detail": f"Report '{name}' has not been generated yet"},
+        )
 
     if name.endswith(".json") or name.endswith(".jsonl"):
         media_type = "application/json"

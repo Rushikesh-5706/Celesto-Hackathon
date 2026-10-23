@@ -1,4 +1,4 @@
-# Secrets — never commit
+# Secrets: never commit
 .env
 
 # Python virtual environments
@@ -47,4 +47,4 @@ AGENTS.md
 CLAUDE.md
 
 # Demo video (large; added manually by Rushi after recording)
-# demo/walkthrough.mp4  — NOT ignored; Rushi adds and commits it directly
+# demo/walkthrough.mp4: NOT ignored; Rushi adds and commits it directly

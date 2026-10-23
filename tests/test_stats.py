@@ -19,6 +19,7 @@ def test_p90_twenty_rows():
 
     # Unsorted input
     import random
+
     shuffled = vals.copy()
     random.seed(42)
     random.shuffle(shuffled)

@@ -67,7 +67,9 @@ def build_capabilities_json() -> None:
 
     for cap in capabilities:
         assert len(cap["why"]) >= 80, f"why description for {cap['id']} must be >= 80 chars"
-        assert (settings.reports_dir.parent / cap["evidence_path"]).exists(), f"Evidence path {cap['evidence_path']} missing"
+        assert (
+            settings.reports_dir.parent / cap["evidence_path"]
+        ).exists(), f"Evidence path {cap['evidence_path']} missing"
 
     data = {"capabilities": capabilities}
     out_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -144,14 +146,16 @@ def build_reliability_json() -> None:
                 continue
             seen_names.add(name)
 
-            runs.append({
-                "sandbox_name": name,
-                "fresh": True,
-                "success": bool(row["success"]),
-                "wall_clock_s": round(float(row["wall_clock_s"]), 3),
-                "boot_to_ready_s": round(float(row["boot_to_ready_s"]), 3),
-                "cost_usd": round(float(row["cost_usd"]), 6),
-            })
+            runs.append(
+                {
+                    "sandbox_name": name,
+                    "fresh": True,
+                    "success": bool(row["success"]),
+                    "wall_clock_s": round(float(row["wall_clock_s"]), 3),
+                    "boot_to_ready_s": round(float(row["boot_to_ready_s"]), 3),
+                    "cost_usd": round(float(row["cost_usd"]), 6),
+                }
+            )
         except Exception:
             pass
 
@@ -169,7 +173,12 @@ def build_reliability_json() -> None:
     }
 
     out_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
-    logger.info("Wrote %s with %d runs (success_rate=%.2f)", out_file, stats["run_count"], stats["success_rate"])
+    logger.info(
+        "Wrote %s with %d runs (success_rate=%.2f)",
+        out_file,
+        stats["run_count"],
+        stats["success_rate"],
+    )
 
 
 def build_all_reports() -> None:

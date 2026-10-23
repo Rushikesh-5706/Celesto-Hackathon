@@ -113,7 +113,9 @@ class LedgerRepository:
         with get_connection(self.database_url) as conn, conn.cursor() as cur:
             cur.execute(query, {"run_id": run_id, "state": state, "outcome": outcome})
 
-    def append_event(self, run_id: str, event: str, payload: dict[str, Any] | None = None) -> EventRecord:
+    def append_event(
+        self, run_id: str, event: str, payload: dict[str, Any] | None = None
+    ) -> EventRecord:
         """Append an event to run_events."""
         query = """
         INSERT INTO run_events (run_id, event, payload, ts)

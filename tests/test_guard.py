@@ -26,7 +26,9 @@ def test_guard_allows_safe_commands():
     ]
     for cmd in safe_commands:
         decision = Guard.evaluate(cmd, origin=ORIGIN_AGENT)
-        assert decision.allowed, f"Expected allow for '{cmd}', got {decision.rule_id}: {decision.reason}"
+        assert (
+            decision.allowed
+        ), f"Expected allow for '{cmd}', got {decision.rule_id}: {decision.reason}"
 
 
 def test_guard_blocks_destructive_fs():

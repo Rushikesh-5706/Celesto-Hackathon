@@ -28,38 +28,47 @@ class GuardDecision:
         return self.decision == GUARD_ALLOW
 
 
-ALLOWED_AGENT_COMMANDS = frozenset([
-    "ls",
-    "cat",
-    "head",
-    "tail",
-    "wc",
-    "grep",
-    "find",
-    "sed",
-    "sort",
-    "uniq",
-    "diff",
-    "pwd",
-    "echo",
-])
+ALLOWED_AGENT_COMMANDS = frozenset(
+    [
+        "ls",
+        "cat",
+        "head",
+        "tail",
+        "wc",
+        "grep",
+        "find",
+        "sed",
+        "sort",
+        "uniq",
+        "diff",
+        "pwd",
+        "echo",
+    ]
+)
 
 # Dangerous patterns checked specifically for precise rule attribution
 DENY_PATTERNS = [
     # rule_id, pattern, reason
     (
         "destructive_fs",
-        re.compile(r"\brm\s+.*(-[a-zA-Z]*[rf]|--recursive|--force)\s+.*(/|~|\$HOME|\*|\.\.)", re.IGNORECASE),
+        re.compile(
+            r"\brm\s+.*(-[a-zA-Z]*[rf]|--recursive|--force)\s+.*(/|~|\$HOME|\*|\.\.)", re.IGNORECASE
+        ),
         "Recursive or forced deletion of system or parent paths is prohibited",
     ),
     (
         "destructive_fs",
-        re.compile(r"\b(mkfs[a-z0-9_.]*|dd\s+if=.*of=/dev/|shred|chmod\s+.*-R|chown\s+.*-R)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(mkfs[a-z0-9_.]*|dd\s+if=.*of=/dev/|shred|chmod\s+.*-R|chown\s+.*-R)\b",
+            re.IGNORECASE,
+        ),
         "Destructive filesystem commands are prohibited",
     ),
     (
         "resource_exhaustion",
-        re.compile(r"(: \(\) \{ :\|:& \};:|yes\s*\||/dev/zero\s+.*>\s*|while\s+true\s*;)", re.IGNORECASE),
+        re.compile(
+            r"(: \(\) \{ :\|:& \};:|yes\s*\||/dev/zero\s+.*>\s*|while\s+true\s*;)", re.IGNORECASE
+        ),
         "Commands causing resource exhaustion or fork bombs are prohibited",
     ),
     (
@@ -69,12 +78,17 @@ DENY_PATTERNS = [
     ),
     (
         "network_egress",
-        re.compile(r"(^|\s|\|)(curl|wget|nc|ncat|socat|ssh|scp|sftp|ftp|telnet|rsync)(\s|$)", re.IGNORECASE),
+        re.compile(
+            r"(^|\s|\|)(curl|wget|nc|ncat|socat|ssh|scp|sftp|ftp|telnet|rsync)(\s|$)", re.IGNORECASE
+        ),
         "Network egress tools are prohibited",
     ),
     (
         "package_install",
-        re.compile(r"\b(pip\s+install|pip3\s+install|apt|apt-get|npm\s+install|git\s+clone)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(pip\s+install|pip3\s+install|apt|apt-get|npm\s+install|git\s+clone)\b",
+            re.IGNORECASE,
+        ),
         "Package managers and repository cloning are prohibited in agent commands",
     ),
     (
@@ -94,7 +108,9 @@ DENY_PATTERNS = [
     ),
     (
         "interpreter_bypass",
-        re.compile(r"\b(python3?\s+-c|perl\s+-e|ruby\s+-e|node\s+-e|bash\s+-c|sh\s+-c)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(python3?\s+-c|perl\s+-e|ruby\s+-e|node\s+-e|bash\s+-c|sh\s+-c)\b", re.IGNORECASE
+        ),
         "Inline interpreter execution is prohibited",
     ),
 ]
@@ -140,7 +156,11 @@ class Guard:
             if cleaned == prefix.strip() or cleaned.startswith(prefix):
                 return GuardDecision(GUARD_ALLOW, "pipeline_allowed", "Trusted pipeline operation")
 
-        return GuardDecision(GUARD_BLOCK, "pipeline_unrecognized", f"Pipeline command not allow-listed: {cleaned[:50]}")
+        return GuardDecision(
+            GUARD_BLOCK,
+            "pipeline_unrecognized",
+            f"Pipeline command not allow-listed: {cleaned[:50]}",
+        )
 
     @staticmethod
     def _evaluate_agent(command: str) -> GuardDecision:
@@ -149,16 +169,24 @@ class Guard:
             return GuardDecision(GUARD_BLOCK, "empty_command", "Command cannot be empty")
 
         if len(command) > GUARD_MAX_CMD_LEN:
-            return GuardDecision(GUARD_BLOCK, "input_length_exceeded", f"Command length {len(command)} exceeds limit {GUARD_MAX_CMD_LEN}")
+            return GuardDecision(
+                GUARD_BLOCK,
+                "input_length_exceeded",
+                f"Command length {len(command)} exceeds limit {GUARD_MAX_CMD_LEN}",
+            )
 
         if "\x00" in command:
-            return GuardDecision(GUARD_BLOCK, "null_or_control_chars", "Command contains null bytes")
+            return GuardDecision(
+                GUARD_BLOCK, "null_or_control_chars", "Command contains null bytes"
+            )
 
         # Allow single trailing newline, reject any internal unescaped control chars
         without_trailing = command[:-1] if command.endswith("\n") else command
         for ch in without_trailing:
             if ord(ch) < 32 and ch not in ("\t",):
-                return GuardDecision(GUARD_BLOCK, "null_or_control_chars", "Command contains control characters")
+                return GuardDecision(
+                    GUARD_BLOCK, "null_or_control_chars", "Command contains control characters"
+                )
 
         # Rule 2: Check shell metacharacters outside single quotes
         stripped_for_meta = re.sub(r"'[^']*'", "", command)  # strip content in single quotes
@@ -171,9 +199,13 @@ class Guard:
         if "`" in stripped_for_meta:
             return GuardDecision(GUARD_BLOCK, "metachar_backtick", "Backticks are prohibited")
         if "$" in stripped_for_meta:
-            return GuardDecision(GUARD_BLOCK, "metachar_dollar", "Variable expansion ($) is prohibited")
+            return GuardDecision(
+                GUARD_BLOCK, "metachar_dollar", "Variable expansion ($) is prohibited"
+            )
         if ">" in stripped_for_meta or "<" in stripped_for_meta:
-            return GuardDecision(GUARD_BLOCK, "metachar_redirect", "Shell redirection is prohibited")
+            return GuardDecision(
+                GUARD_BLOCK, "metachar_redirect", "Shell redirection is prohibited"
+            )
 
         # Rule 3: Specific deny checks
         for rule_id, pattern, reason in DENY_PATTERNS:
@@ -193,46 +225,77 @@ class Guard:
             try:
                 tokens = shlex.split(part_cleaned)
             except ValueError as e:
-                return GuardDecision(GUARD_BLOCK, "shlex_parse_error", f"Malformed shell syntax: {e}")
+                return GuardDecision(
+                    GUARD_BLOCK, "shlex_parse_error", f"Malformed shell syntax: {e}"
+                )
 
             if not tokens:
-                return GuardDecision(GUARD_BLOCK, "empty_command_part", "Empty pipeline command component")
+                return GuardDecision(
+                    GUARD_BLOCK, "empty_command_part", "Empty pipeline command component"
+                )
 
             base_cmd = tokens[0]
 
             # Special case: python3 -m pytest
-            if base_cmd in ("python", "python3") and len(tokens) >= 3 and tokens[1] == "-m" and tokens[2] == "pytest":
+            if (
+                base_cmd in ("python", "python3")
+                and len(tokens) >= 3
+                and tokens[1] == "-m"
+                and tokens[2] == "pytest"
+            ):
                 # Validate arguments restricted to /workspace/case
                 for arg in tokens[3:]:
                     if arg.startswith("-"):
                         continue
-                    if not (arg.startswith("/workspace/case") or arg.startswith("tests/") or arg.startswith("case/")):
-                        return GuardDecision(GUARD_BLOCK, "path_escape", f"Pytest target outside /workspace/case: {arg}")
+                    if not (
+                        arg.startswith("/workspace/case")
+                        or arg.startswith("tests/")
+                        or arg.startswith("case/")
+                    ):
+                        return GuardDecision(
+                            GUARD_BLOCK,
+                            "path_escape",
+                            f"Pytest target outside /workspace/case: {arg}",
+                        )
                     if ".." in arg:
-                        return GuardDecision(GUARD_BLOCK, "path_escape", "Path traversal (..) is prohibited")
+                        return GuardDecision(
+                            GUARD_BLOCK, "path_escape", "Path traversal (..) is prohibited"
+                        )
                 continue
 
             if base_cmd not in ALLOWED_AGENT_COMMANDS:
-                return GuardDecision(GUARD_BLOCK, "not_allow_listed", f"Command '{base_cmd}' is not in allow-list")
+                return GuardDecision(
+                    GUARD_BLOCK, "not_allow_listed", f"Command '{base_cmd}' is not in allow-list"
+                )
 
             # Check specific sub-options for allowed commands
             if base_cmd == "find" and any(t in ("-exec", "-execdir", "-delete") for t in tokens):
-                return GuardDecision(GUARD_BLOCK, "destructive_fs", "find options -exec and -delete are prohibited")
+                return GuardDecision(
+                    GUARD_BLOCK, "destructive_fs", "find options -exec and -delete are prohibited"
+                )
 
             if base_cmd == "sed":
                 if any(t == "-i" or t.startswith("-i") for t in tokens):
-                    return GuardDecision(GUARD_BLOCK, "destructive_fs", "sed -i in-place modification is prohibited")
+                    return GuardDecision(
+                        GUARD_BLOCK, "destructive_fs", "sed -i in-place modification is prohibited"
+                    )
                 if not any(t == "-n" or "-n" in t for t in tokens[1:]):
-                    return GuardDecision(GUARD_BLOCK, "sed_missing_n", "sed must be invoked with -n")
+                    return GuardDecision(
+                        GUARD_BLOCK, "sed_missing_n", "sed must be invoked with -n"
+                    )
 
             # Validate path arguments
             for arg in tokens[1:]:
                 if arg.startswith("-"):
                     continue
                 if ".." in arg:
-                    return GuardDecision(GUARD_BLOCK, "path_escape", "Path traversal (..) is prohibited")
+                    return GuardDecision(
+                        GUARD_BLOCK, "path_escape", "Path traversal (..) is prohibited"
+                    )
                 if arg.startswith("/") and not arg.startswith("/workspace/case"):
-                    return GuardDecision(GUARD_BLOCK, "path_escape", f"Absolute path outside /workspace/case: {arg}")
+                    return GuardDecision(
+                        GUARD_BLOCK, "path_escape", f"Absolute path outside /workspace/case: {arg}"
+                    )
 
         return GuardDecision(GUARD_ALLOW, "agent_allowed", "Command satisfies security policy")
 
@@ -255,6 +318,8 @@ class Guard:
             )
 
         if "\x00" in content:
-            return GuardDecision(GUARD_BLOCK, "test_file_null_byte", "Test file contains null bytes")
+            return GuardDecision(
+                GUARD_BLOCK, "test_file_null_byte", "Test file contains null bytes"
+            )
 
         return GuardDecision(GUARD_ALLOW, "test_file_allowed", "Test file write allowed")

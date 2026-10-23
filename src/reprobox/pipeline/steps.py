@@ -60,17 +60,35 @@ def step_boot_probe(
     while time.monotonic() - t0 < timeout_s:
         try:
             res = _guarded_pipeline_run(
-                provider, computer, sandbox_name, run_id, "python3 --version", "boot_probe", timeout=10
+                provider,
+                computer,
+                sandbox_name,
+                run_id,
+                "python3 --version",
+                "boot_probe",
+                timeout=10,
             )
             if res.exit_code == 0:
                 # Ensure pytest is available
                 pytest_check = _guarded_pipeline_run(
-                    provider, computer, sandbox_name, run_id, "python3 -m pytest --version", "boot_probe", timeout=10
+                    provider,
+                    computer,
+                    sandbox_name,
+                    run_id,
+                    "python3 -m pytest --version",
+                    "boot_probe",
+                    timeout=10,
                 )
                 if pytest_check.exit_code != 0:
                     logger.info("Installing pytest into guest sandbox...")
                     _guarded_pipeline_run(
-                        provider, computer, sandbox_name, run_id, "python3 -m pip install pytest", "boot_probe", timeout=60
+                        provider,
+                        computer,
+                        sandbox_name,
+                        run_id,
+                        "python3 -m pip install pytest",
+                        "boot_probe",
+                        timeout=60,
                     )
                 return time.monotonic() - t0
         except Exception as e:
@@ -90,7 +108,9 @@ def step_stage_case(
     case: CaseFixture,
 ) -> dict[str, str]:
     """Upload project repository files and issue report into sandbox."""
-    _guarded_pipeline_run(provider, computer, sandbox_name, run_id, "mkdir -p /workspace/case", "stage_case")
+    _guarded_pipeline_run(
+        provider, computer, sandbox_name, run_id, "mkdir -p /workspace/case", "stage_case"
+    )
 
     manifest: dict[str, str] = {}
     file_map: dict[str, bytes] = {}
@@ -109,7 +129,9 @@ def step_stage_case(
     provider.write_files(computer, file_map)
 
     # Ensure tests directory exists for reproduction test
-    _guarded_pipeline_run(provider, computer, sandbox_name, run_id, "mkdir -p /workspace/case/tests", "stage_case")
+    _guarded_pipeline_run(
+        provider, computer, sandbox_name, run_id, "mkdir -p /workspace/case/tests", "stage_case"
+    )
 
     return manifest
 
@@ -122,7 +144,13 @@ def step_baseline(
 ) -> bool:
     """Verify that existing test suite passes on unmodified codebase."""
     res = _guarded_pipeline_run(
-        provider, computer, sandbox_name, run_id, "python3 -m pytest /workspace/case -p no:cacheprovider", "baseline", timeout=45
+        provider,
+        computer,
+        sandbox_name,
+        run_id,
+        "python3 -m pytest /workspace/case -p no:cacheprovider",
+        "baseline",
+        timeout=45,
     )
     return res.exit_code == 0
 
@@ -168,9 +196,11 @@ def step_execute_test(
 ) -> tuple[bool, str, str]:
     """Run authored reproduction test and produce JUnit XML report."""
     cmd = f"python3 -m pytest {TEST_FILE_PATH} --junitxml=/workspace/case/junit.xml -p no:cacheprovider{extra_args}"
-    res = _guarded_pipeline_run(provider, computer, sandbox_name, run_id, cmd, "execute_test", timeout=timeout)
+    res = _guarded_pipeline_run(
+        provider, computer, sandbox_name, run_id, cmd, "execute_test", timeout=timeout
+    )
     # Expected exit code is 1 (failure)
-    success = (res.exit_code == 1)
+    success = res.exit_code == 1
     return success, res.stdout, res.stderr
 
 
@@ -182,8 +212,22 @@ def step_verify_reference(
     case: CaseFixture,
 ) -> bool:
     """Overlay reference fixes onto scratch directory and verify test passes."""
-    _guarded_pipeline_run(provider, computer, sandbox_name, run_id, "mkdir -p /workspace/scratch_ref", "verify_reference")
-    _guarded_pipeline_run(provider, computer, sandbox_name, run_id, "cp -r /workspace/case/. /workspace/scratch_ref/", "verify_reference")
+    _guarded_pipeline_run(
+        provider,
+        computer,
+        sandbox_name,
+        run_id,
+        "mkdir -p /workspace/scratch_ref",
+        "verify_reference",
+    )
+    _guarded_pipeline_run(
+        provider,
+        computer,
+        sandbox_name,
+        run_id,
+        "cp -r /workspace/case/. /workspace/scratch_ref/",
+        "verify_reference",
+    )
 
     # Overlay reference fixes
     ref_map: dict[str, bytes] = {}
@@ -196,5 +240,7 @@ def step_verify_reference(
 
     # Run the test against fixed reference code
     cmd = "python3 -m pytest /workspace/scratch_ref/tests/test_issue_repro.py -p no:cacheprovider"
-    res = _guarded_pipeline_run(provider, computer, sandbox_name, run_id, cmd, "verify_reference", timeout=30)
+    res = _guarded_pipeline_run(
+        provider, computer, sandbox_name, run_id, cmd, "verify_reference", timeout=30
+    )
     return res.exit_code == 0

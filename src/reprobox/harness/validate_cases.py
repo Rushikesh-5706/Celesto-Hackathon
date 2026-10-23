@@ -22,7 +22,9 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     fixtures_dir = settings.fixtures_dir
-    case_dirs = sorted([d for d in fixtures_dir.iterdir() if d.is_dir() and (d / "case.json").exists()])
+    case_dirs = sorted(
+        [d for d in fixtures_dir.iterdir() if d.is_dir() and (d / "case.json").exists()]
+    )
 
     log_lines: list[str] = [
         f"=== CASE VALIDATION START {datetime.now(UTC).isoformat()} ===",
@@ -34,7 +36,10 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
         content = log_path.read_text(encoding="utf-8")
         import re
 
-        for m in re.finditer(r"--- Validating ([\w\-]+):[^\n]*\n\s+\[1\] Existing test suite: PASS\n\s+\[2\] Author probe on buggy code fails: PASS\n\s+\[3\] Reference fix passes all tests: PASS", content):
+        for m in re.finditer(
+            r"--- Validating ([\w\-]+):[^\n]*\n\s+\[1\] Existing test suite: PASS\n\s+\[2\] Author probe on buggy code fails: PASS\n\s+\[3\] Reference fix passes all tests: PASS",
+            content,
+        ):
             completed_cases.add(m.group(1))
 
     sbx_name = new_sandbox_name()
@@ -68,9 +73,9 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
                     repo_map[f"{scratch}/{rel}"] = fp.read_bytes()
             prov.write_files(comp, repo_map)
 
-            # Run existing suite — must pass
+            # Run existing suite: must pass
             r1 = prov.run(comp, f"python3 -m pytest {scratch} -p no:cacheprovider")
-            baseline_ok = (r1.exit_code == 0)
+            baseline_ok = r1.exit_code == 0
             status_1 = f"  [1] Existing test suite: {'PASS' if baseline_ok else 'FAIL'}"
             log_lines.append(status_1)
             print(status_1, flush=True)
@@ -79,18 +84,22 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
                 log_lines.append(f"      Stderr: {r1.stderr[:200]}")
                 all_passed = False
 
-            # 2. Upload author probe (if exists) and run on buggy code — must fail with AssertionError
+            # 2. Upload author probe (if exists) and run on buggy code: must fail with AssertionError
             if case.author_probe_path and case.author_probe_path.exists():
-                prov.write_file(comp, f"{scratch}/tests/test_probe.py", case.author_probe_path.read_bytes())
-                r2 = prov.run(comp, f"python3 -m pytest {scratch}/tests/test_probe.py -p no:cacheprovider")
-                probe_failed_as_expected = (r2.exit_code == 1)
+                prov.write_file(
+                    comp, f"{scratch}/tests/test_probe.py", case.author_probe_path.read_bytes()
+                )
+                r2 = prov.run(
+                    comp, f"python3 -m pytest {scratch}/tests/test_probe.py -p no:cacheprovider"
+                )
+                probe_failed_as_expected = r2.exit_code == 1
                 status_2 = f"  [2] Author probe on buggy code fails: {'PASS' if probe_failed_as_expected else 'FAIL'}"
                 log_lines.append(status_2)
                 print(status_2, flush=True)
                 if not probe_failed_as_expected:
                     all_passed = False
 
-                # 3. Batch overlay reference fixes — probe and suite must pass
+                # 3. Batch overlay reference fixes: probe and suite must pass
                 ref_map: dict[str, bytes] = {}
                 for ref_fp in case.reference_path.glob("**/*"):
                     if ref_fp.is_file() and not ref_fp.name.startswith("."):
@@ -99,8 +108,10 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
                 prov.write_files(comp, ref_map)
 
                 r3 = prov.run(comp, f"python3 -m pytest {scratch} -p no:cacheprovider")
-                ref_fixed = (r3.exit_code == 0)
-                status_3 = f"  [3] Reference fix passes all tests: {'PASS' if ref_fixed else 'FAIL'}"
+                ref_fixed = r3.exit_code == 0
+                status_3 = (
+                    f"  [3] Reference fix passes all tests: {'PASS' if ref_fixed else 'FAIL'}"
+                )
                 log_lines.append(status_3)
                 print(status_3, flush=True)
                 if not ref_fixed:
@@ -109,7 +120,9 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
             # Progressively write log to disk
             log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
 
-    summary = f"\n=== CASE VALIDATION FINISHED: {'ALL PASSED' if all_passed else 'FAILURES OBSERVED'} ==="
+    summary = (
+        f"\n=== CASE VALIDATION FINISHED: {'ALL PASSED' if all_passed else 'FAILURES OBSERVED'} ==="
+    )
     log_lines.append(summary)
     print(summary, flush=True)
     log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")

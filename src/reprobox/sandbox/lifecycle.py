@@ -28,7 +28,11 @@ class ComputerRegistry:
     def register(self, sandbox_name: str, computer: Any, provider: ComputerProvider) -> None:
         with self._lock:
             self._active[sandbox_name] = (computer, provider)
-            logger.debug("Registered sandbox %s in lifecycle registry (active=%d)", sandbox_name, len(self._active))
+            logger.debug(
+                "Registered sandbox %s in lifecycle registry (active=%d)",
+                sandbox_name,
+                len(self._active),
+            )
 
     def unregister(self, sandbox_name: str) -> None:
         with self._lock:
@@ -49,7 +53,11 @@ class ComputerRegistry:
 
         for name, (comp, prov) in to_clean:
             try:
-                logger.warning("Emergency cleanup: deleting sandbox %s (id=%s)...", name, getattr(comp, "id", None))
+                logger.warning(
+                    "Emergency cleanup: deleting sandbox %s (id=%s)...",
+                    name,
+                    getattr(comp, "id", None),
+                )
                 prov.delete(comp)
             except Exception as exc:
                 logger.error("Failed emergency deletion of %s: %s", name, exc)
@@ -92,13 +100,20 @@ def managed_computer(
 
         for attempt in range(1, max_delete_retries + 1):
             try:
-                logger.info("Deleting computer for sandbox %s (attempt %d/%d)...", name, attempt, max_delete_retries)
+                logger.info(
+                    "Deleting computer for sandbox %s (attempt %d/%d)...",
+                    name,
+                    attempt,
+                    max_delete_retries,
+                )
                 provider.delete(computer)
                 # Confirm deletion if supported
                 if not provider.exists(computer):
                     deletion_confirmed = True
                     break
-                logger.warning("Sandbox %s still exists after delete attempt %d, retrying...", name, attempt)
+                logger.warning(
+                    "Sandbox %s still exists after delete attempt %d, retrying...", name, attempt
+                )
                 time.sleep(2.0 * attempt)
             except Exception as exc:
                 last_error = exc
@@ -124,6 +139,7 @@ def sweep_orphans(provider: ComputerProvider) -> list[str]:
         logger.info("Sweeping orphan computer id=%s", cid)
         try:
             from celesto import Computer
+
             comp = Computer.get(cid)
             comp.delete()
             deleted.append(cid)

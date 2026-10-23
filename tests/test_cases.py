@@ -7,7 +7,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CASES_DIR = REPO_ROOT / "fixtures" / "cases"
 
-REQUIRED_FIELDS = {"case_id", "title", "bug_class", "target_symbol", "expected_exception", "source_files"}
+REQUIRED_FIELDS = {
+    "case_id",
+    "title",
+    "bug_class",
+    "target_symbol",
+    "expected_exception",
+    "source_files",
+}
 
 
 def test_all_cases_static_structure():
@@ -36,7 +43,9 @@ def test_all_cases_static_structure():
         assert ref_dir.exists(), f"Missing reference/ in {cdir.name}"
         ref_files = [str(f.relative_to(ref_dir)) for f in ref_dir.glob("**/*") if f.is_file()]
         declared_files = meta["source_files"]
-        assert sorted(ref_files) == sorted(declared_files), f"reference/ in {cdir.name} must exactly match source_files"
+        assert sorted(ref_files) == sorted(
+            declared_files
+        ), f"reference/ in {cdir.name} must exactly match source_files"
 
         # 4. AST parse checks
         for py_file in cdir.glob("**/*.py"):
@@ -56,4 +65,6 @@ def test_all_cases_static_structure():
                 for line in ref_path.read_text(encoding="utf-8").splitlines():
                     cleaned = line.strip()
                     if len(cleaned) > 30:
-                        assert cleaned not in issue_text, f"issue.md in {cdir.name} leaks reference line: {cleaned}"
+                        assert (
+                            cleaned not in issue_text
+                        ), f"issue.md in {cdir.name} leaks reference line: {cleaned}"

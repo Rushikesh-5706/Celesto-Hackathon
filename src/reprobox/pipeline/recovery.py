@@ -71,7 +71,9 @@ class RecoveryHandler:
                 if res.exit_code != 0:
                     raise RuntimeError(f"Computer unready after restart: {res.stderr}")
             except Exception as exc:
-                logger.error("Failed to start/verify computer on resume attempt %d: %s", attempt, exc)
+                logger.error(
+                    "Failed to start/verify computer on resume attempt %d: %s", attempt, exc
+                )
                 continue
 
             resume_ready_s = time.monotonic() - t0
@@ -81,13 +83,17 @@ class RecoveryHandler:
             try:
                 current_data = self.provider.read_file(self.computer, TEST_FILE_PATH)
                 current_sha = hashlib.sha256(current_data).hexdigest()
-                integrity_ok = (current_sha == self.checkpoint_test_sha)
+                integrity_ok = current_sha == self.checkpoint_test_sha
             except Exception as e:
                 logger.warning("Integrity check failed to read test file: %s", e)
 
             self.event_callback(
                 "resume_verified",
-                {"attempt": attempt, "integrity_ok": integrity_ok, "resume_ready_s": resume_ready_s},
+                {
+                    "attempt": attempt,
+                    "integrity_ok": integrity_ok,
+                    "resume_ready_s": resume_ready_s,
+                },
             )
 
             if not integrity_ok:

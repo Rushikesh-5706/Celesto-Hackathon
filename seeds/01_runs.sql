@@ -1,4 +1,4 @@
--- Reprobox ledger schema — idempotent, can be applied multiple times safely.
+-- Reprobox ledger schema: idempotent, can be applied multiple times safely.
 
 CREATE TABLE IF NOT EXISTS runs (
     run_id          TEXT        PRIMARY KEY,
