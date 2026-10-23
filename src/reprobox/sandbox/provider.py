@@ -35,6 +35,10 @@ class ComputerProvider(Protocol):
         """Write binary data to an absolute path inside the computer."""
         ...
 
+    def write_files(self, computer: Any, file_map: dict[str, bytes]) -> None:
+        """Write multiple binary files to paths inside the computer in batch."""
+        ...
+
     def read_file(self, computer: Any, path: str) -> bytes:
         """Read binary data from an absolute path inside the computer."""
         ...

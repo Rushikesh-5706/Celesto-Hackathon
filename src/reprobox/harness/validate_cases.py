@@ -38,22 +38,28 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
 
         for cdir in case_dirs:
             case = CaseFixture.load(cdir)
-            log_lines.append(f"\n--- Validating {case.case_id}: {case.title} ---")
+            msg = f"\n--- Validating {case.case_id}: {case.title} ---"
+            log_lines.append(msg)
+            print(msg, flush=True)
             logger.info("Validating case %s...", case.case_id)
 
             scratch = f"/workspace/validate_{case.case_id}"
             prov.run(comp, f"rm -rf {scratch} && mkdir -p {scratch}")
 
-            # 1. Upload repo
+            # 1. Batch upload repo
+            repo_map: dict[str, bytes] = {}
             for fp in case.repo_path.glob("**/*"):
                 if fp.is_file() and not fp.name.startswith("."):
                     rel = fp.relative_to(case.repo_path)
-                    prov.write_file(comp, f"{scratch}/{rel}", fp.read_bytes())
+                    repo_map[f"{scratch}/{rel}"] = fp.read_bytes()
+            prov.write_files(comp, repo_map)
 
             # Run existing suite — must pass
             r1 = prov.run(comp, f"python3 -m pytest {scratch} -p no:cacheprovider")
             baseline_ok = (r1.exit_code == 0)
-            log_lines.append(f"  [1] Existing test suite: {'PASS' if baseline_ok else 'FAIL'}")
+            status_1 = f"  [1] Existing test suite: {'PASS' if baseline_ok else 'FAIL'}"
+            log_lines.append(status_1)
+            print(status_1, flush=True)
             if not baseline_ok:
                 log_lines.append(f"      Stdout: {r1.stdout[:200]}")
                 log_lines.append(f"      Stderr: {r1.stderr[:200]}")
@@ -64,24 +70,33 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
                 prov.write_file(comp, f"{scratch}/tests/test_probe.py", case.author_probe_path.read_bytes())
                 r2 = prov.run(comp, f"python3 -m pytest {scratch}/tests/test_probe.py -p no:cacheprovider")
                 probe_failed_as_expected = (r2.exit_code == 1)
-                log_lines.append(f"  [2] Author probe on buggy code fails: {'PASS' if probe_failed_as_expected else 'FAIL'}")
+                status_2 = f"  [2] Author probe on buggy code fails: {'PASS' if probe_failed_as_expected else 'FAIL'}"
+                log_lines.append(status_2)
+                print(status_2, flush=True)
                 if not probe_failed_as_expected:
                     all_passed = False
 
-                # 3. Overlay reference fixes — probe and suite must pass
+                # 3. Batch overlay reference fixes — probe and suite must pass
+                ref_map: dict[str, bytes] = {}
                 for ref_fp in case.reference_path.glob("**/*"):
-                    if ref_fp.is_file():
+                    if ref_fp.is_file() and not ref_fp.name.startswith("."):
                         rel = ref_fp.relative_to(case.reference_path)
-                        prov.write_file(comp, f"{scratch}/{rel}", ref_fp.read_bytes())
+                        ref_map[f"{scratch}/{rel}"] = ref_fp.read_bytes()
+                prov.write_files(comp, ref_map)
 
                 r3 = prov.run(comp, f"python3 -m pytest {scratch} -p no:cacheprovider")
                 ref_fixed = (r3.exit_code == 0)
-                log_lines.append(f"  [3] Reference fix passes all tests: {'PASS' if ref_fixed else 'FAIL'}")
+                status_3 = f"  [3] Reference fix passes all tests: {'PASS' if ref_fixed else 'FAIL'}"
+                log_lines.append(status_3)
+                print(status_3, flush=True)
                 if not ref_fixed:
                     all_passed = False
 
-    log_lines.append(f"\n=== CASE VALIDATION FINISHED: {'ALL PASSED' if all_passed else 'FAILURES OBSERVED'} ===")
-    output = "\n".join(log_lines) + "\n"
-    log_path.write_text(output, encoding="utf-8")
-    print(output)
+            # Progressively write log to disk
+            log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
+
+    summary = f"\n=== CASE VALIDATION FINISHED: {'ALL PASSED' if all_passed else 'FAILURES OBSERVED'} ==="
+    log_lines.append(summary)
+    print(summary, flush=True)
+    log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
     return all_passed

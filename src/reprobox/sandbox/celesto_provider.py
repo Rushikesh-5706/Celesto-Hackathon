@@ -45,36 +45,58 @@ class CelestoProvider(ComputerProvider):
         return computer
 
     def run(self, computer: Any, command: str, timeout: int = 60) -> RunResult:
-        """Execute a shell command inside the computer sandbox."""
-        t0 = time.monotonic()
-        res = computer.run(command, timeout=timeout)
-        elapsed = time.monotonic() - t0
-        return RunResult(
-            stdout=res.stdout or "",
-            stderr=res.stderr or "",
-            exit_code=res.exit_code,
-            computer_id=getattr(computer, "id", "unknown"),
-            elapsed_s=elapsed,
+        """Execute a shell command inside the computer sandbox with retry on transient conflict."""
+        max_attempts = 4
+        for attempt in range(max_attempts):
+            t0 = time.monotonic()
+            try:
+                res = computer.run(command, timeout=timeout)
+                elapsed = time.monotonic() - t0
+                return RunResult(
+                    stdout=res.stdout or "",
+                    stderr=res.stderr or "",
+                    exit_code=res.exit_code,
+                    computer_id=getattr(computer, "id", "unknown"),
+                    elapsed_s=elapsed,
+                )
+            except Exception as exc:
+                err_msg = str(exc)
+                if ("409" in err_msg or "Conflict" in err_msg or "busy" in err_msg.lower()) and attempt < max_attempts - 1:
+                    wait_s = 2.0 * (attempt + 1)
+                    logger.warning("Celesto run returned 409 conflict, retrying in %.1fs (attempt %d/%d)...", wait_s, attempt + 1, max_attempts)
+                    time.sleep(wait_s)
+                    continue
+                raise
+
+    def write_files(self, computer: Any, file_map: dict[str, bytes]) -> None:
+        """Write multiple binary files to the sandbox in a single batched run."""
+        if not file_map:
+            return
+        import json
+
+        encoded = {path: base64.b64encode(data).decode("ascii") for path, data in file_map.items()}
+        payload = json.dumps(encoded)
+        b64_payload = base64.b64encode(payload.encode("utf-8")).decode("ascii")
+        guest_code = (
+            "import base64, json, pathlib\n"
+            f"payload = json.loads(base64.b64decode('{b64_payload}').decode('utf-8'))\n"
+            "for p_str, b64_bytes in payload.items():\n"
+            "    p = pathlib.Path(p_str)\n"
+            "    p.parent.mkdir(parents=True, exist_ok=True)\n"
+            "    p.write_bytes(base64.b64decode(b64_bytes))\n"
         )
+        b64_script = base64.b64encode(guest_code.encode("utf-8")).decode("ascii")
+        res = self.run(computer, f"python3 -c \"import base64; exec(base64.b64decode('{b64_script}').decode())\"")
+        if res.exit_code != 0:
+            raise RuntimeError(f"Failed to batch write files: {res.stderr}")
 
     def write_file(self, computer: Any, path: str, data: bytes) -> None:
         """Write binary data to an absolute path inside the sandbox."""
-        b64_str = base64.b64encode(data).decode("ascii")
-        # Ensure parent directory exists and decode data
-        script = (
-            f"import base64, pathlib\n"
-            f"p = pathlib.Path({path!r})\n"
-            f"p.parent.mkdir(parents=True, exist_ok=True)\n"
-            f"p.write_bytes(base64.b64decode({b64_str!r}))\n"
-        )
-        b64_script = base64.b64encode(script.encode("utf-8")).decode("ascii")
-        res = computer.run(f"python3 -c \"import base64; exec(base64.b64decode('{b64_script}').decode())\"")
-        if res.exit_code != 0:
-            raise RuntimeError(f"Failed to write file {path}: {res.stderr}")
+        self.write_files(computer, {path: data})
 
     def read_file(self, computer: Any, path: str) -> bytes:
         """Read binary data from an absolute path inside the sandbox."""
-        res = computer.run(f"base64 {path!r}")
+        res = self.run(computer, f"base64 {path!r}")
         if res.exit_code != 0:
             raise FileNotFoundError(f"File {path} not found or unreadable: {res.stderr}")
         return base64.b64decode(res.stdout)

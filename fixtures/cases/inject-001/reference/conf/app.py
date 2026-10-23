@@ -1,2 +1,4 @@
+DEFAULTS = {'debug': False, 'active': True}
+
 def get_setting(key: str) -> bool:
-    return True
+    return DEFAULTS.get(key, False)

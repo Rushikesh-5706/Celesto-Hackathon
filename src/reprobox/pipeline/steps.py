@@ -93,6 +93,7 @@ def step_stage_case(
     _guarded_pipeline_run(provider, computer, sandbox_name, run_id, "mkdir -p /workspace/case", "stage_case")
 
     manifest: dict[str, str] = {}
+    file_map: dict[str, bytes] = {}
 
     # Upload all files in repo/
     for file_path in sorted(case.repo_path.glob("**/*")):
@@ -100,11 +101,12 @@ def step_stage_case(
             rel = file_path.relative_to(case.repo_path)
             guest_dest = f"/workspace/case/{rel}"
             data = file_path.read_bytes()
-            provider.write_file(computer, guest_dest, data)
+            file_map[guest_dest] = data
             manifest[str(rel)] = hashlib.sha256(data).hexdigest()
 
     # Upload issue.md
-    provider.write_file(computer, "/workspace/case/issue.md", case.issue_text.encode("utf-8"))
+    file_map["/workspace/case/issue.md"] = case.issue_text.encode("utf-8")
+    provider.write_files(computer, file_map)
 
     # Ensure tests directory exists for reproduction test
     _guarded_pipeline_run(provider, computer, sandbox_name, run_id, "mkdir -p /workspace/case/tests", "stage_case")
@@ -183,11 +185,13 @@ def step_verify_reference(
     _guarded_pipeline_run(provider, computer, sandbox_name, run_id, "cp -r /workspace/case/. /workspace/scratch_ref/", "verify_reference")
 
     # Overlay reference fixes
+    ref_map: dict[str, bytes] = {}
     for ref_file in sorted(case.reference_path.glob("**/*")):
-        if ref_file.is_file():
+        if ref_file.is_file() and not ref_file.name.startswith("."):
             rel = ref_file.relative_to(case.reference_path)
             dest = f"/workspace/scratch_ref/{rel}"
-            provider.write_file(computer, dest, ref_file.read_bytes())
+            ref_map[dest] = ref_file.read_bytes()
+    provider.write_files(computer, ref_map)
 
     # Run the test against fixed reference code
     cmd = "python3 -m pytest /workspace/scratch_ref/tests/test_issue_repro.py -p no:cacheprovider"
