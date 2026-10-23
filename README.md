@@ -51,42 +51,135 @@ At 1,000 concurrent users, three clear bottlenecks emerge:
 
 ## Architecture
 
-Reprobox splits into two strict trust zones:
+Reprobox separates trusted orchestration from untrusted execution through two isolated trust boundaries.
 
+### Component Diagram
+
+```mermaid
+flowchart TD
+    subgraph TrustedControlPlane["Trusted Control Plane"]
+        Operator["Operator"]
+        RunLedgerAPI["Run Ledger API"]
+        PostgresLedger[("Postgres Ledger")]
+        EnvironmentFile["Environment File"]
+        ReportDirectory["Report Directory"]
+        AgentLoopGuard["Agent loop and guard"]
+        LLMEndpoint["LLM endpoint (OpenAI-compatible)"]
+    end
+
+    subgraph UntrustedComputers["Untrusted Computers"]
+        CelestoSandbox["Celesto Sandbox"]
+        SnapshotStore["Snapshot Store (not used on cloud provider)"]
+        NetworkPolicy["Network Policy"]
+    end
+
+    subgraph Evidence["Evidence"]
+        CommandAuditLog["Command Audit Log"]
+    end
+
+    Operator -->|"HTTP"| RunLedgerAPI
+    RunLedgerAPI -->|"Reads and writes runs"| PostgresLedger
+    RunLedgerAPI -->|"Reads provider config"| EnvironmentFile
+    RunLedgerAPI -->|"Create, exec, stop, delete"| CelestoSandbox
+    RunLedgerAPI -.->|"Checkpoint or restore (not used on cloud provider)"| SnapshotStore
+    RunLedgerAPI -->|"Allow, deny, or limit"| NetworkPolicy
+    RunLedgerAPI -->|"Appends command lines"| CommandAuditLog
+    RunLedgerAPI -->|"Writes graded reports"| ReportDirectory
+    RunLedgerAPI -->|"Dispatches reproduction job"| AgentLoopGuard
+    AgentLoopGuard -->|"Deliberation and tool calls"| LLMEndpoint
+    AgentLoopGuard -->|"Executes vetted tool actions"| CelestoSandbox
 ```
-[ Developer / CI Client ]
-         | (HTTP)
-         v
-+-------------------------------------------------------+
-| Trusted Control Plane (Docker Compose)                |
-|                                                       |
-|  [ FastAPI API: 8080 ] <---> [ PostgreSQL Ledger ]   |
-|         |                                             |
-|         v                                             |
-|  [ Security Guard Hook ]                              |
-|         |                                             |
-|  [ LLM Endpoint (OpenAI-compatible) ]                 |
-+---------|---------------------------------------------+
-          | (Celesto Python SDK)
-          v
-+-------------------------------------------------------+
-| Untrusted Sandbox Zone (Celesto Cloud)                |
-|                                                       |
-|  [ Micro Sandbox: /workspace/case ]                   |
-|  - Python 3.12 Runtime                                |
-|  - Isolated pytest execution                          |
-+-------------------------------------------------------+
+
+### Lifecycle State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created
+    Created --> Ready: boot finished
+    Ready --> Running: agent step starts
+    Running --> Succeeded: step 10 done
+    Running --> MidTaskFailure: step 7 failed
+    MidTaskFailure --> Resumed: policy resume
+    MidTaskFailure --> RolledBack: policy rollback
+    MidTaskFailure --> FreshStart: policy fresh
+    Resumed --> Running
+    RolledBack --> Running
+    FreshStart --> Running
+    Succeeded --> Deleted: cleanup
+    MidTaskFailure --> Deleted: cleanup
+    Deleted --> [*]
 ```
 
-### Lifecycle States
+State definitions:
+- **Created**: Celesto returned an id.
+- **Ready**: Boot probe passed, measuring boot-to-ready latency.
+- **Running**: The agent is executing inside the guest.
+- **Succeeded**: The reproduction proof output exists.
+- **MidTaskFailure**: Step 7 did not complete and failure is detected.
+- **Resumed**: Re-executes on the same disk without reprovisioning.
+- **RolledBack**: Restores a snapshot taken before the risky step.
+- **FreshStart**: Deletes the guest and creates another with a new unique name.
+- **Deleted**: Cleanup terminal state. Every path ends at Deleted.
 
-Transitions follow this state machine:
-- Start -> Created (Celesto returns computer id)
-- Created -> Ready (Boot probe passes)
-- Ready -> Running (Case staged, agent loop active)
-- Running -> Succeeded (Proof output emitted)
-- Running -> Failed (Assertion or classification error)
-- Failed / Succeeded -> Deleted (Container destroyed in finally block)
+Only the Resumed path is exercised for real in graded evidence. RolledBack and FreshStart exist in code and tests but were not exercised against the real provider.
+
+### Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Op as Operator
+    participant API as Run Ledger API
+    participant DB as Postgres Ledger
+    participant Loop as Agent Loop and Guard
+    participant LLM as LLM Endpoint
+    participant Sbx as Celesto Sandbox
+    participant Audit as Command Audit Log
+    participant Rep as Report Directory
+
+    Op->>API: POST /api/jobs (issue context)
+    API->>DB: INSERT run record (state: created)
+    API->>Sbx: Computer(provider="cloud").start()
+    Sbx-->>API: computer id assigned
+    API->>Sbx: Run readiness probe
+    Sbx-->>API: probe returns exit 0 (state: ready)
+    API->>DB: UPDATE run record (state: ready)
+    API->>Loop: Start 10-step reproduction pipeline
+    Loop->>DB: UPDATE run record (state: running)
+    Loop->>LLM: Send issue.md and tool definitions
+    LLM-->>Loop: Tool invocation request
+    Loop->>Audit: Append command audit entry
+    Loop->>Sbx: Execute tool action inside sandbox
+    Sbx-->>Loop: Command stdout, stderr, exit code
+    Loop->>LLM: Send observation
+    Loop->>Sbx: Run pytest reproduction probe (Step 7)
+    Sbx-->>Loop: Probe failure output
+    Loop->>DB: UPDATE run record (state: succeeded)
+    Loop->>Sbx: computer.delete()
+    Sbx-->>Loop: Sandbox destroyed (state: deleted)
+    Loop->>Rep: Write proof and execution evidence
+    API-->>Op: 200 OK with reproduction proof
+```
+
+### Component Overview
+
+| Component | Trust Zone | Technology | Role |
+| :--- | :--- | :--- | :--- |
+| **Run Ledger API** | Trusted Control Plane | FastAPI, Uvicorn | External HTTP interface and lifecycle coordinator |
+| **Postgres Ledger** | Trusted Control Plane | PostgreSQL 16 | Durable state store for runs, events, and timings |
+| **Agent Loop and Guard** | Trusted Control Plane | Python 3.12, AST / Regex Guard | Pre-execution safety enforcement and agent steering |
+| **LLM Endpoint** | Trusted Control Plane | Groq OpenAI-compatible API | Bug issue analysis and pytest reproduction synthesis |
+| **Celesto Sandbox** | Untrusted Execution Zone | Celesto Cloud Micro VM | Isolated Linux guest executing untrusted code |
+| **Command Audit Log** | Evidence Zone | JSON Lines (`logs/commands.jsonl`) | Tamper-evident ledger of every dispatched and blocked command |
+| **Report Directory** | Evidence Zone | Contract JSON (`reports/`) | Self-verifying empirical deliverables |
+
+### Data Flow
+
+1. Operator calls `POST /api/jobs` or runs the CLI harness. A ledger row is inserted with state `created` when the Celesto SDK returns a computer id.
+2. The control plane stages case files into the guest, executes the boot probe to verify `ready` state, and launches the agent loop with state `running`.
+3. The control plane queries the LLM with the issue text and tool schema. For each tool call, the pre-run guard checks the command, writes an entry to `logs/commands.jsonl`, and only dispatches safe actions to the guest.
+4. When the agent completes, the pipeline executes the test probe, classifies failure output, checks reference fixes, collects the proof, and deletes the container to enter `deleted` state.
+5. All lifecycle transitions and execution metrics are persisted directly to PostgreSQL.
 
 ## Eval report
 
