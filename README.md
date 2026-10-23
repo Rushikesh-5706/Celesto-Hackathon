@@ -131,7 +131,7 @@ sequenceDiagram
     participant Op as Operator
     participant API as Run Ledger API
     participant DB as Postgres Ledger
-    participant Loop as Agent Loop and Guard
+    participant AgentGuard as Agent Loop and Guard
     participant LLM as LLM Endpoint
     participant Sbx as Celesto Sandbox
     participant Audit as Command Audit Log
@@ -144,20 +144,20 @@ sequenceDiagram
     API->>Sbx: Run readiness probe
     Sbx-->>API: probe returns exit 0 (state: ready)
     API->>DB: UPDATE run record (state: ready)
-    API->>Loop: Start 10-step reproduction pipeline
-    Loop->>DB: UPDATE run record (state: running)
-    Loop->>LLM: Send issue.md and tool definitions
-    LLM-->>Loop: Tool invocation request
-    Loop->>Audit: Append command audit entry
-    Loop->>Sbx: Execute tool action inside sandbox
-    Sbx-->>Loop: Command stdout, stderr, exit code
-    Loop->>LLM: Send observation
-    Loop->>Sbx: Run pytest reproduction probe (Step 7)
-    Sbx-->>Loop: Probe failure output
-    Loop->>DB: UPDATE run record (state: succeeded)
-    Loop->>Sbx: computer.delete()
-    Sbx-->>Loop: Sandbox destroyed (state: deleted)
-    Loop->>Rep: Write proof and execution evidence
+    API->>AgentGuard: Start 10-step reproduction pipeline
+    AgentGuard->>DB: UPDATE run record (state: running)
+    AgentGuard->>LLM: Send issue.md and tool definitions
+    LLM-->>AgentGuard: Tool invocation request
+    AgentGuard->>Audit: Append command audit entry
+    AgentGuard->>Sbx: Execute tool action inside sandbox
+    Sbx-->>AgentGuard: Command stdout, stderr, exit code
+    AgentGuard->>LLM: Send observation
+    AgentGuard->>Sbx: Run pytest reproduction probe (Step 7)
+    Sbx-->>AgentGuard: Probe failure output
+    AgentGuard->>DB: UPDATE run record (state: succeeded)
+    AgentGuard->>Sbx: computer.delete()
+    Sbx-->>AgentGuard: Sandbox destroyed (state: deleted)
+    AgentGuard->>Rep: Write proof and execution evidence
     API-->>Op: 200 OK with reproduction proof
 ```
 
