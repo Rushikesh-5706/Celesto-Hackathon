@@ -21,12 +21,14 @@ COPY reports/ ./reports/
 COPY logs/ ./logs/
 COPY fixtures/ ./fixtures/
 COPY pyproject.toml ./
+RUN pip install --no-cache-dir .
 
 # Writable directory for the audit log and other runtime output.
 RUN mkdir -p /app/var && chown appuser:appuser /app/var
 
 USER appuser
 
+ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
