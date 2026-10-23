@@ -63,8 +63,9 @@ class RecoveryHandler:
             t0 = time.monotonic()
 
             try:
-                # Ensure computer is running
-                self.provider.start(self.computer)
+                # Ensure computer is running if stopped
+                if getattr(self.computer, "status", None) not in (None, "running"):
+                    self.provider.start(self.computer)
                 # Verify boot responsiveness
                 res = self.provider.run(self.computer, "python3 --version", timeout=15)
                 if res.exit_code != 0:
@@ -97,6 +98,7 @@ class RecoveryHandler:
 
             # Clear cache and retry step 7 execution
             self.provider.run(self.computer, "rm -rf /workspace/case/.pytest_cache")
+            self.event_callback("step_started", {"step": 7, "name": "execute_test", "retry": True})
             success, stdout, stderr = step7_executor(self.computer)
             if success:
                 logger.info("Step 7 retry succeeded under resume policy on attempt %d", attempt)

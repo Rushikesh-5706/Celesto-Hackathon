@@ -74,6 +74,21 @@ def parse_and_classify_junit(
 
     fail_type = failure_node.attrib.get("type", "")
     traceback = failure_node.text or ""
+    message = failure_node.attrib.get("message", "")
+
+    # Pytest's standard JUnit XML omits type=; extract exception from traceback or message
+    if not fail_type:
+        for line in reversed(traceback.strip().splitlines()):
+            words = line.strip().split()
+            for w in words:
+                cleaned = w.strip(":,()\"'")
+                if cleaned.endswith("Error") or cleaned.endswith("Exception"):
+                    fail_type = cleaned
+                    break
+            if fail_type:
+                break
+        if not fail_type and ("AssertionError" in traceback or "assert" in message):
+            fail_type = "AssertionError"
 
     # Check 2: Failure type matches AssertionError or declared expected_exception
     # Reject syntax, import, name, type, and attribute errors

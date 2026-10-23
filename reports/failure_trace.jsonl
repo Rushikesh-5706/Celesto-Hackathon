@@ -1,0 +1,31 @@
+{"ts": "2026-10-23T10:08:52.666785+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "run_started"}
+{"ts": "2026-10-23T10:09:02.252551+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 1}
+{"ts": "2026-10-23T10:09:02.265201+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 1}
+{"ts": "2026-10-23T10:09:02.275257+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 2}
+{"ts": "2026-10-23T10:09:19.740305+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 2}
+{"ts": "2026-10-23T10:09:19.769297+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 3}
+{"ts": "2026-10-23T10:09:28.294420+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 3}
+{"ts": "2026-10-23T10:09:28.320182+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 4}
+{"ts": "2026-10-23T10:09:31.885287+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 4}
+{"ts": "2026-10-23T10:09:31.903744+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 5}
+{"ts": "2026-10-23T10:11:04.450749+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 5}
+{"ts": "2026-10-23T10:11:04.479753+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 6}
+{"ts": "2026-10-23T10:11:07.219566+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 6}
+{"ts": "2026-10-23T10:11:07.242457+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "fault_injected", "step": 7, "method": "invalid_pytest_opt"}
+{"ts": "2026-10-23T10:11:07.261155+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 7}
+{"ts": "2026-10-23T10:11:09.574511+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_failed", "step": 7}
+{"ts": "2026-10-23T10:11:09.598152+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "policy_selected", "policy": "resume"}
+{"ts": "2026-10-23T10:11:09.614214+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "resume_started", "attempt": 1}
+{"ts": "2026-10-23T10:11:14.999954+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "resume_verified", "attempt": 1}
+{"ts": "2026-10-23T10:11:15.019777+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "policy_applied", "policy": "resume", "attempt": 1}
+{"ts": "2026-10-23T10:11:17.593790+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 7}
+{"ts": "2026-10-23T10:11:19.963428+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 7}
+{"ts": "2026-10-23T10:11:19.988603+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 8}
+{"ts": "2026-10-23T10:11:22.812086+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 8}
+{"ts": "2026-10-23T10:11:22.833808+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 9}
+{"ts": "2026-10-23T10:11:33.993409+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 9}
+{"ts": "2026-10-23T10:11:34.015680+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_started", "step": 10}
+{"ts": "2026-10-23T10:11:34.037629+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "step_completed", "step": 10}
+{"ts": "2026-10-23T10:11:45.017636+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "run_completed"}
+{"ts": "2026-10-23T10:11:45.036324+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "cleanup_started"}
+{"ts": "2026-10-23T10:11:45.049453+00:00", "run_id": "run-failure-1qh3mjdzc6", "sandbox_name": "sbx-f20dzoopvq", "event": "cleanup_completed"}

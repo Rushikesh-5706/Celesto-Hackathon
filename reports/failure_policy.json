@@ -1,0 +1,7 @@
+{
+  "failed_step": 7,
+  "total_steps": 10,
+  "policy": "resume",
+  "rationale": "Steps 1 through 6 encompass sandbox provisioning, dependency probe, project staging, baseline testing, and model deliberation. These initial steps consume significant wall-clock time and token budget. In contrast, Step 7 only executes the newly authored test using pytest against a read-only codebase. The resume policy leverages the intact filesystem state and idempotency of test execution to retry in-place after verifying source tree integrity and test file SHA-256 digests. This avoids discarding a healthy container, saves re-boot latency, and prevents repeating non-deterministic model generation.",
+  "trace_path": "reports/failure_trace.jsonl"
+}

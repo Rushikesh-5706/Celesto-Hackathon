@@ -164,9 +164,10 @@ def step_execute_test(
     sandbox_name: str,
     run_id: str,
     timeout: int = 30,
+    extra_args: str = "",
 ) -> tuple[bool, str, str]:
     """Run authored reproduction test and produce JUnit XML report."""
-    cmd = f"python3 -m pytest {TEST_FILE_PATH} --junitxml=/workspace/case/junit.xml -p no:cacheprovider"
+    cmd = f"python3 -m pytest {TEST_FILE_PATH} --junitxml=/workspace/case/junit.xml -p no:cacheprovider{extra_args}"
     res = _guarded_pipeline_run(provider, computer, sandbox_name, run_id, cmd, "execute_test", timeout=timeout)
     # Expected exit code is 1 (failure)
     success = (res.exit_code == 1)
