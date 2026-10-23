@@ -10,6 +10,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except Exception:
+    pass
+
 
 def _env(key: str, default: str = "") -> str:
     return os.environ.get(key, default)

@@ -17,7 +17,11 @@ class CelestoProvider(ComputerProvider):
     """Production provider using Celesto Cloud."""
 
     def __init__(self, api_key: str | None = None) -> None:
-        self.api_key = api_key or settings.celesto_api_key
+        import os
+
+        self.api_key = api_key or settings.celesto_api_key or os.environ.get("CELESTO_API_KEY", "")
+        if self.api_key and not os.environ.get("CELESTO_API_KEY"):
+            os.environ["CELESTO_API_KEY"] = self.api_key
 
     def _ensure_sdk(self) -> Any:
         try:
@@ -30,6 +34,8 @@ class CelestoProvider(ComputerProvider):
         """Create and start a cloud computer sandbox."""
         computer_cls = self._ensure_sdk()
         kwargs: dict[str, Any] = {"provider": "cloud"}
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
         if settings.celesto_template_id:
             kwargs["template_id"] = settings.celesto_template_id
         computer = computer_cls(**kwargs)
