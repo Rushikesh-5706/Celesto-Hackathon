@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -40,7 +39,7 @@ def run_evaluation_batch(
 ) -> None:
     """Execute sequential reliability evaluation across graded cases."""
     prov = provider or CelestoProvider()
-    batch = batch_id or f"batch-{int(time.time())}"
+    batch = batch_id or "eval-official-20"
 
     eval_file = settings.reports_dir / "evidence" / "eval_runs.jsonl"
     detail_file = settings.reports_dir / "evidence" / "eval_runs_detail.jsonl"
@@ -79,8 +78,9 @@ def run_evaluation_batch(
 
     cases_to_run = [f"case-{i:03d}" for i in range(1, run_count + 1)]
 
-    for case_id in cases_to_run:
+    for idx, case_id in enumerate(cases_to_run, 1):
         if case_id in completed_cases:
+            print(f"[{idx}/{len(cases_to_run)}] Skipping already completed {case_id} in {batch}", flush=True)
             logger.info("Skipping already completed case %s in batch %s", case_id, batch)
             continue
 
@@ -88,6 +88,7 @@ def run_evaluation_batch(
         run_id = f"run-eval-{case_id}-{sandbox_name[4:]}"
         t_start = datetime.now(UTC).isoformat()
 
+        print(f"\n[{idx}/{len(cases_to_run)}] Starting eval run for {case_id} (sandbox={sandbox_name})...", flush=True)
         logger.info("Starting graded eval run for %s (%s)...", case_id, sandbox_name)
         try:
             res = run_pipeline(
@@ -96,6 +97,7 @@ def run_evaluation_batch(
                 case_id=case_id,
                 provider=prov,
             )
+            print(f"[{idx}/{len(cases_to_run)}] {case_id} finished: success={res.success} in {res.wall_clock_s:.1f}s (cost=${res.cost_usd:.5f})", flush=True)
 
             record = {
                 "batch_id": batch,
