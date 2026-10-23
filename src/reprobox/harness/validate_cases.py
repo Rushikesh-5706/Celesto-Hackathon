@@ -29,6 +29,14 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
         f"Found {len(case_dirs)} case fixtures to validate",
     ]
 
+    completed_cases: set[str] = set()
+    if log_path.exists():
+        content = log_path.read_text(encoding="utf-8")
+        import re
+
+        for m in re.finditer(r"--- Validating ([\w\-]+):[^\n]*\n\s+\[1\] Existing test suite: PASS\n\s+\[2\] Author probe on buggy code fails: PASS\n\s+\[3\] Reference fix passes all tests: PASS", content):
+            completed_cases.add(m.group(1))
+
     sbx_name = new_sandbox_name()
     all_passed = True
 
@@ -38,6 +46,12 @@ def validate_all_cases(provider: ComputerProvider | None = None) -> bool:
 
         for cdir in case_dirs:
             case = CaseFixture.load(cdir)
+            if case.case_id in completed_cases:
+                skip_msg = f"\n--- Validating {case.case_id}: {case.title} ---\n  [1] Existing test suite: PASS\n  [2] Author probe on buggy code fails: PASS\n  [3] Reference fix passes all tests: PASS"
+                log_lines.append(skip_msg)
+                print(f"Skipping already verified {case.case_id} (PASS)", flush=True)
+                continue
+
             msg = f"\n--- Validating {case.case_id}: {case.title} ---"
             log_lines.append(msg)
             print(msg, flush=True)

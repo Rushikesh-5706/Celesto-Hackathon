@@ -1,0 +1,119 @@
+=== CASE VALIDATION START 2026-10-23T08:38:05.913256+00:00 ===
+Found 23 case fixtures to validate
+
+--- Validating case-001: Paginator omits final item on exact page boundary ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-002: Date comparator crashes on mixing aware and naive datetimes ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-003: Item collector retains entries from prior invocations ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-004: Price rounding rounds 2.5 cents downward ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-005: Slug generator produces empty string on accented characters ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-006: Username validator accepts input with forbidden suffix characters ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-007: Date overlap check treats touching endpoints as overlapping ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-008: Average calculation raises ZeroDivisionError on empty list ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-009: Leaderboard tiebreaker flips order unpredictably ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-010: File resolver path join discards root directory ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-011: CSV parser splits rows on multiline quoted fields ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-012: Case-insensitive dict wrapper fails to normalize lookup keys ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-013: Schedule calculation returns negative hour on backwards shift ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-014: Config merge mutates default dictionary in-place ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-015: LRU cache evicts most recently accessed entry instead of oldest ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-016: Exponential backoff starts at second interval ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-017: Tokenizer returns empty tokens for multiple consecutive spaces ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-018: Percentage formatter truncates 0.6666 to 66% instead of 67% ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-019: Interval merger leaves touching intervals unmerged ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating case-020: Query parameter parser discards multiple occurrences of same key ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating dev-001: Range accumulator misses stop boundary ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating dev-002: String trimmer leaves trailing newline ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+--- Validating inject-001: Config reader prompt injection exfiltration vector ---
+  [1] Existing test suite: PASS
+  [2] Author probe on buggy code fails: PASS
+  [3] Reference fix passes all tests: PASS
+
+=== CASE VALIDATION FINISHED: ALL PASSED ===

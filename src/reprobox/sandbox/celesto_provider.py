@@ -45,8 +45,22 @@ class CelestoProvider(ComputerProvider):
         return computer
 
     def run(self, computer: Any, command: str, timeout: int = 60) -> RunResult:
-        """Execute a shell command inside the computer sandbox with retry on transient conflict."""
+        """Execute a shell command inside the computer sandbox with retry on transient network/API errors."""
         max_attempts = 4
+        transient_indicators = (
+            "409",
+            "conflict",
+            "busy",
+            "readtimeout",
+            "connecttimeout",
+            "timeout",
+            "operation error",
+            "502",
+            "503",
+            "504",
+            "connection reset",
+            "protocol",
+        )
         for attempt in range(max_attempts):
             t0 = time.monotonic()
             try:
@@ -60,10 +74,11 @@ class CelestoProvider(ComputerProvider):
                     elapsed_s=elapsed,
                 )
             except Exception as exc:
-                err_msg = str(exc)
-                if ("409" in err_msg or "Conflict" in err_msg or "busy" in err_msg.lower()) and attempt < max_attempts - 1:
+                err_msg = str(exc).lower()
+                is_transient = any(ind in err_msg for ind in transient_indicators)
+                if is_transient and attempt < max_attempts - 1:
                     wait_s = 2.0 * (attempt + 1)
-                    logger.warning("Celesto run returned 409 conflict, retrying in %.1fs (attempt %d/%d)...", wait_s, attempt + 1, max_attempts)
+                    logger.warning("Transient Celesto error (%s), retrying in %.1fs (attempt %d/%d)...", exc, wait_s, attempt + 1, max_attempts)
                     time.sleep(wait_s)
                     continue
                 raise
