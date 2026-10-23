@@ -1,0 +1,33 @@
+{
+  "cleanup_on_success": true,
+  "cleanup_on_failure": true,
+  "cleanup_on_interrupt": true,
+  "sandbox_names": [
+    "sbx-0duqyjcdu3",
+    "sbx-0t8ng7alw3",
+    "sbx-229g25f00f",
+    "sbx-5z1im8cazk",
+    "sbx-6506r1xioh",
+    "sbx-8m77b9s2qx",
+    "sbx-au8gk2iq5v",
+    "sbx-cxhjjfq8uk",
+    "sbx-f20dzoopvq",
+    "sbx-fbqydzpkau",
+    "sbx-fmjtoxounz",
+    "sbx-g4lg4f771k",
+    "sbx-hc0dv4gvq8",
+    "sbx-ho6h3123i1",
+    "sbx-i6g6mluani",
+    "sbx-j0tnum5dyk",
+    "sbx-kzzepol803",
+    "sbx-lcaujcueeb",
+    "sbx-mbw4mkh4kd",
+    "sbx-oikt7gl91o",
+    "sbx-p97j1iprpj",
+    "sbx-puoe2ung3g",
+    "sbx-qx1h5gqk4f",
+    "sbx-uuwlypvz2v",
+    "sbx-w616p0x3k1",
+    "sbx-znduutngw0"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "who": "Open-source software maintainers, library authors, and triage engineers managing issue trackers.",
+  "agent_work": "Investigates reported bug descriptions, parses reproduction clues, and authors isolated pytest suites.",
+  "proof_output": "Executable pytest test function reproducing the bug with an AssertionError on the current commit.",
+  "idea_source": "idea_bank"
+}

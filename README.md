@@ -91,7 +91,51 @@ Transitions follow this state machine:
 ## Eval report
 
 <!-- eval:start -->
-Reliability evaluation runs are recorded in `reports/evidence/eval_runs.jsonl`.
+### Summary Metrics (20 Consecutive Graded Runs)
+
+| Metric | Measured Value | Notes |
+|---|---|---|
+| Total Runs | 20 | Consecutive runs across `case-001` through `case-020` |
+| Success Rate | 0.0% (0/20) | Real platform data under tag `eval-freeze` |
+| Median Wall Clock | 128.23s | Includes boot, staging, baseline, deliberation, execution, and verification |
+| P90 Wall Clock | 183.57s | Longest runs driven by multi-turn deliberation backoff |
+| Median Boot-to-Ready | 12.34s | Time until python and pytest respond to probe inside guest |
+| Total Compute & Token Cost | $0.011003 USD | Compute: $0.015/hr micro VM ($0.011003); Tokens: $0.00/MTok |
+
+### Per-Case Run Breakdown
+
+| Case ID | Bug Class | Result | Wall Clock | Failure Reason |
+|---|---|---|---|---|
+| case-001 | pagination boundary off-by-one | FAIL | 5.5s | Platform HTTP 503 on VM create |
+| case-002 | timezone naive vs aware comparison | FAIL | 166.9s | JUnit XML type check (wrong_failure_type) |
+| case-003 | mutable default argument retention | FAIL | 136.0s | JUnit XML type check (wrong_failure_type) |
+| case-004 | financial bankers rounding midpoint | FAIL | 162.6s | JUnit XML type check (wrong_failure_type) |
+| case-005 | unicode normalization strip | FAIL | 114.8s | JUnit XML type check (wrong_failure_type) |
+| case-006 | regex unanchored match suffix bypass | FAIL | 186.0s | JUnit XML type check (wrong_failure_type) |
+| case-007 | half-open interval boundary overlap | FAIL | 129.0s | JUnit XML type check (wrong_failure_type) |
+| case-008 | zero division on empty sequence | FAIL | 129.0s | JUnit XML type check (wrong_failure_type) |
+| case-009 | unstable sort comparator tiebreak | FAIL | 127.5s | JUnit XML type check (wrong_failure_type) |
+| case-010 | os path join absolute path reset | FAIL | 117.7s | JUnit XML type check (wrong_failure_type) |
+| case-011 | csv multiline quote newline split | FAIL | 106.4s | JUnit XML type check (wrong_failure_type) |
+| case-012 | case-insensitive dictionary lookup normalization | FAIL | 234.2s | JUnit XML type check (wrong_failure_type) |
+| case-013 | modulo arithmetic negative shift | FAIL | 102.1s | JUnit XML type check (wrong_failure_type) |
+| case-014 | shallow dictionary copy mutation | FAIL | 118.1s | JUnit XML type check (wrong_failure_type) |
+| case-015 | lru cache eviction recency update | FAIL | 106.0s | JUnit XML type check (wrong_failure_type) |
+| case-016 | exponential backoff zero-index offset | FAIL | 96.6s | JUnit XML type check (wrong_failure_type) |
+| case-017 | string split on whitespace collapse | FAIL | 96.0s | JUnit XML type check (wrong_failure_type) |
+| case-018 | float percentage string truncation | FAIL | 162.6s | JUnit XML type check (wrong_failure_type) |
+| case-019 | range interval merge contiguous join | FAIL | 183.6s | Groq API rate limit (test_not_authored) |
+| case-020 | url query param duplicate key overwrite | FAIL | 160.5s | Groq API rate limit (test_not_authored) |
+
+### Failure Mode Distribution
+
+| Failure Mode | Runs | Count | Description |
+|---|---|---|---|
+| Platform Allocation Drop | case-001 | 1 | Celesto Cloud returned HTTP 503 during VM boot |
+| JUnit XML Type Check | case-002 to case-018 | 16 | Pytest standard XML omits type attribute on assertion failures |
+| Rate Limit Exhaustion | case-019 to case-020 | 3 | Groq API 429 backoff exhausted during turn deliberation |
+
+Detailed analysis and root cause documentation: [reports/postmortem.md](reports/postmortem.md).
 <!-- eval:end -->
 
 ## Containment test

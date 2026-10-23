@@ -1,0 +1,6 @@
+{"sandbox_name": "sbx-zwi94ng9b9", "started_at": "2026-10-23T10:24:08.184339+00:00", "case_id": "case-002", "run_id": "run-conc-zwi94ng9b9", "success": false, "wall_clock_s": 8.418, "error": "pipeline_error"}
+{"sandbox_name": "sbx-mu12vbrans", "started_at": "2026-10-23T10:24:08.184268+00:00", "case_id": "case-003", "run_id": "run-conc-mu12vbrans", "success": false, "wall_clock_s": 8.491, "error": "pipeline_error"}
+{"sandbox_name": "sbx-1mw6iqzf18", "started_at": "2026-10-23T10:24:08.184602+00:00", "case_id": "case-005", "run_id": "run-conc-1mw6iqzf18", "success": false, "wall_clock_s": 9.348, "error": "pipeline_error"}
+{"sandbox_name": "sbx-y37858fpfw", "started_at": "2026-10-23T10:24:08.184513+00:00", "case_id": "case-001", "run_id": "run-conc-y37858fpfw", "success": false, "wall_clock_s": 9.572, "error": "pipeline_error"}
+{"sandbox_name": "sbx-dukhjrpxxu", "started_at": "2026-10-23T10:24:08.184443+00:00", "case_id": "case-006", "run_id": "run-conc-dukhjrpxxu", "success": false, "wall_clock_s": 9.867, "error": "pipeline_error"}
+{"sandbox_name": "sbx-fbqydzpkau", "started_at": "2026-10-23T10:24:08.183979+00:00", "case_id": "case-004", "run_id": "run-conc-fbqydzpkau", "success": false, "wall_clock_s": 198.469, "error": "test_not_authored"}

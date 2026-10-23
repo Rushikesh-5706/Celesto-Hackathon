@@ -1,0 +1,14 @@
+{
+  "capabilities": [
+    {
+      "id": "safety_hooks",
+      "why": "Intercepts all agent and pipeline tool commands prior to dispatching them to the sandbox container. Enforces default-deny AST parsing, command tokenization, path isolation under /workspace/case, and blocks dangerous metacharacters and exfiltration tools before the guest ever sees them.",
+      "evidence_path": "reports/evidence/capability_probe.log"
+    },
+    {
+      "id": "persistence",
+      "why": "Enables resuming container state across mid-task step failures. Under the Step 7 failure policy, the sandbox disk and environment are preserved to allow immediate in-place retry of test executions without paying re-provisioning latency or repeating expensive reasoning.",
+      "evidence_path": "reports/evidence/capability_probe.log"
+    }
+  ]
+}

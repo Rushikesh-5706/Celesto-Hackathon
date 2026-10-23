@@ -1,0 +1,9 @@
+{
+  "case_id": "dev-001",
+  "run_id": "run-failure-1qh3mjdzc6",
+  "sandbox_name": "sbx-f20dzoopvq",
+  "success": true,
+  "target_symbol": "sum_range",
+  "expected_exception": "AssertionError",
+  "author_turns": 2305
+}

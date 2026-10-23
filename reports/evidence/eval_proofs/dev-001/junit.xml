@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.020" timestamp="2026-10-23T10:11:18.797958+00:00" hostname="celesto"><testcase classname="test_issue_repro" name="test_range_inclusive" time="0.001"><failure message="assert 10 == 15&#10; +  where 10 = sum_range(1, 5)">def test_range_inclusive():
+&gt;       assert sum_range(1, 5) == 15
+E       assert 10 == 15
+E        +  where 10 = sum_range(1, 5)
+
+workspace/case/tests/test_issue_repro.py:4: AssertionError</failure></testcase></testsuite></testsuites>
