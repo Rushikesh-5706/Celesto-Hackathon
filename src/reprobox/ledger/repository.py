@@ -124,6 +124,8 @@ class LedgerRepository:
         with get_connection(self.database_url) as conn, conn.cursor() as cur:
             cur.execute(query, {"run_id": run_id, "state": state, "outcome": outcome})
 
+    update_run_state = update_state
+
     def append_event(
         self, run_id: str, event: str, payload: dict[str, Any] | None = None
     ) -> EventRecord:

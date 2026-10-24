@@ -84,11 +84,12 @@ class CelestoProvider(ComputerProvider):
 
             except Exception as exc:
                 err_str = str(exc)
-                # Detect trial rate limit (HTTP 429 / trial_create_rate_limit_reached)
+                # Detect trial rate limit (HTTP 429 / trial_create_rate_limit_reached / limiting requests)
                 is_trial_limit = (
                     "trial_create_rate_limit_reached" in err_str
-                    or ("429" in err_str and "trial" in err_str.lower())
-                    or ("429" in err_str and "rate" in err_str.lower())
+                    or getattr(exc, "status_code", None) == 429
+                    or "429" in err_str
+                    or "limiting requests" in err_str.lower()
                 )
                 if not is_trial_limit:
                     raise

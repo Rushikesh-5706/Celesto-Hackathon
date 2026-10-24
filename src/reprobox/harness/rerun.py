@@ -26,13 +26,20 @@ _PROOF_DIR = Path("reports/evidence/rerun_proofs")
 
 def _get_git_commit() -> str:
     try:
-        head_file = Path(__file__).resolve().parents[4] / ".git" / "HEAD"
+        head_file = Path(__file__).resolve().parents[3] / ".git" / "HEAD"
         if head_file.exists():
             ref = head_file.read_text(encoding="utf-8").strip()
             if ref.startswith("ref: "):
-                ref_path = head_file.parent / ref[5:]
+                ref_name = ref[5:]
+                ref_path = head_file.parent / ref_name
                 if ref_path.exists():
                     return ref_path.read_text(encoding="utf-8").strip()
+                packed = head_file.parent / "packed-refs"
+                if packed.exists():
+                    for pline in packed.read_text(encoding="utf-8").splitlines():
+                        parts = pline.strip().split()
+                        if len(parts) == 2 and parts[1] == ref_name:
+                            return parts[0]
             return ref[:40]
     except (OSError, UnicodeDecodeError) as exc:
         logger.debug("Could not resolve git commit: %s", exc)
@@ -151,6 +158,13 @@ def run_rerun(until: str = "13:00", provider: AuditedProvider | None = None) -> 
                 case_id=case_id,
                 provider=prov,
             )
+            if res.computer_id == "unknown":
+                print(
+                    f"[rerun] Sandbox could not be provisioned for {case_id} (rate limited). Stopping queue.",
+                    flush=True,
+                )
+                break
+
             record = {
                 "case_id": case_id,
                 "sandbox_name": sandbox_name,

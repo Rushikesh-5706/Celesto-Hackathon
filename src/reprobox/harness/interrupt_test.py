@@ -72,6 +72,10 @@ def run_interrupt_test(
         )
     except KeyboardInterrupt:
         sigint_caught = True
+        try:
+            repo.update_run_state(run_id, "deleted")
+        except Exception as exc:
+            logger.debug("Failed updating ledger run state: %s", exc)
         lines.append("Caught KeyboardInterrupt in main thread as expected")
     finally:
         stop_timer.set()

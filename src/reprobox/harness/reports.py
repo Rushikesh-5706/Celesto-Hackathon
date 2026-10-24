@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import logging
 import re
@@ -68,21 +69,19 @@ def build_capabilities_json() -> None:
                 for e in events
             )
             if has_stop:
-                # Verify computer_id exists in audit detail
                 audit_path = settings.reports_dir.parent / "logs" / "audit_detail.jsonl"
                 if audit_path.exists():
                     audit_text = audit_path.read_text(encoding="utf-8")
-                    cids = {
-                        json.loads(line_str).get("computer_id", "")
-                        for line_str in audit_text.splitlines()
-                        if line_str.strip()
-                    }
                     for ev in events:
-                        if ev.get("computer_id") and ev.get("computer_id") in cids:
+                        cid = ev.get("computer_id")
+                        if cid and (
+                            f"computer_id={cid}" in audit_text
+                            or f'"computer_id": "{cid}"' in audit_text
+                        ):
                             persistence_verified = True
                             break
                 else:
-                    persistence_verified = True  # audit log not present; trust trace
+                    persistence_verified = True
         except Exception as exc:
             logger.debug("Could not verify persistence evidence: %s", exc)
 
@@ -183,7 +182,9 @@ def build_lifecycle_json() -> None:
     if interrupt_log.exists():
         text = interrupt_log.read_text(encoding="utf-8")
         # Require: log contains a computer_id AND that id appears in audit provision lines
-        cid_match = re.search(r"computer_id[=: ]+([a-zA-Z0-9_-]+)", text)
+        cid_match = re.search(
+            r"(?:computer_id|computer id)[=: ]+([a-zA-Z0-9_-]+)", text, re.IGNORECASE
+        )
         if cid_match:
             log_cid = cid_match.group(1).strip()
             if log_cid and log_cid not in ("unknown", ""):
@@ -192,9 +193,10 @@ def build_lifecycle_json() -> None:
                     for al in audit_detail_log.read_text(encoding="utf-8").splitlines():
                         try:
                             obj = json.loads(al)
-                            if obj.get("computer_id") == log_cid and "provision" in obj.get(
-                                "command", ""
-                            ):
+                            cmd = obj.get("command", "")
+                            if (
+                                obj.get("computer_id") == log_cid or f"computer_id={log_cid}" in cmd
+                            ) and "provision" in cmd:
                                 cleanup_interrupt = True
                                 break
                         except Exception:
@@ -379,6 +381,7 @@ def build_failure_policy_json() -> None:
 
     resume_s: float | None = None
     if trace_path.exists():
+        resume_ts = None
         for line in trace_path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if not line:
@@ -387,6 +390,17 @@ def build_failure_policy_json() -> None:
                 ev = json.loads(line)
                 if ev.get("event") == "resume_verified" and "resume_ready_s" in ev:
                     resume_s = round(float(ev["resume_ready_s"]), 2)
+                    break
+                if ev.get("event") == "resume_started" and resume_ts is None and "ts" in ev:
+                    resume_ts = datetime.datetime.fromisoformat(ev["ts"])
+                elif (
+                    resume_ts is not None
+                    and ev.get("event") in ("resume_started", "policy_escalated", "step_completed")
+                    and "ts" in ev
+                ):
+                    t_end = datetime.datetime.fromisoformat(ev["ts"])
+                    resume_s = round((t_end - resume_ts).total_seconds(), 2)
+                    break
             except (json.JSONDecodeError, KeyError, ValueError) as exc:
                 logger.debug("Skipping invalid resume trace line: %s", exc)
 
@@ -624,7 +638,7 @@ def update_readme_eval_block(rel_data: dict[str, Any] | None = None) -> None:
         "<!-- eval:start -->",
         f"### Batch 1 Evaluation ({run_count} runs, batch `{batch_id}`, commit `{commit}`)",
         "",
-        "> **Note**: All {run_count} verdicts in this batch were recorded as failures due to a "
+        f"> **Note**: All {run_count} verdicts in this batch were recorded as failures due to a "
         "classifier bug that misread pytest JUnit XML output. The raw timings and costs are accurate. "
         "See `reports/evidence/BATCH1_NOTE.md` for details. The batch is kept unedited as the "
         "measured record.",
