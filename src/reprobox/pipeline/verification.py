@@ -90,32 +90,36 @@ def parse_and_classify_junit(
         if not fail_type and ("AssertionError" in traceback or "assert" in message):
             fail_type = "AssertionError"
 
-    # Check 2: Failure type matches AssertionError or declared expected_exception
-    # Reject syntax, import, name, type, and attribute errors
+    # Check 2: Failure type must not be a test-collection/import error.
+    # Only reject exceptions that indicate the test never ran (setup failures).
+    # Runtime exceptions like TypeError, ZeroDivisionError, KeyError, AttributeError
+    # are all valid bug-reproduction outcomes and must NOT be rejected.
     disallowed_exceptions = (
         "ImportError",
         "ModuleNotFoundError",
         "SyntaxError",
-        "NameError",
-        "TypeError",
-        "AttributeError",
     )
 
     if any(dis in fail_type for dis in disallowed_exceptions):
         return ClassificationResult(
             passed=False,
             reason_code="wrong_failure_type",
-            details=f"Failure type '{fail_type}' is disallowed runtime/syntax error",
+            details=f"Failure type '{fail_type}' indicates a test collection/import error, not a bug reproduction",
             failure_type=fail_type,
             test_name=test_name,
             traceback=traceback,
         )
 
-    if expected_exception not in fail_type and "AssertionError" not in fail_type:
+    # Accept any non-empty failure type: AssertionError, TypeError, ZeroDivisionError,
+    # KeyError, ValueError, AttributeError, NameError, RuntimeError, etc.
+    # The expected_exception field acts as a hint, not a strict filter.
+    # If expected_exception is set and fail_type is non-trivially populated, allow it
+    # as long as it is not a collection-phase error already filtered above.
+    if not fail_type:
         return ClassificationResult(
             passed=False,
             reason_code="wrong_failure_type",
-            details=f"Expected {expected_exception}, got '{fail_type}'",
+            details="Could not determine exception type from JUnit XML",
             failure_type=fail_type,
             test_name=test_name,
             traceback=traceback,

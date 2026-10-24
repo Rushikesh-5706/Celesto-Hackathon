@@ -12,10 +12,16 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SEED_PATH = REPO_ROOT / "seeds" / "01_runs.sql"
 
 
+@pytest.fixture(scope="module")
+def db_available() -> bool:
+    """Return True only if PostgreSQL is reachable within a short timeout."""
+    return wait_for_db(max_wait_s=5)
+
+
 @pytest.fixture(scope="module", autouse=True)
-def init_test_db():
-    """Ensure schema and seed are applied to the test database."""
-    if wait_for_db(max_wait_s=5):
+def init_test_db(db_available: bool):
+    """Ensure schema and seed are applied to the test database when available."""
+    if db_available:
         apply_seed_sql(SEED_PATH)
 
 
@@ -31,8 +37,10 @@ def test_health_contract(client: TestClient):
     assert resp.json() == {"status": "ok"}
 
 
-def test_list_runs_includes_seed(client: TestClient):
+def test_list_runs_includes_seed(client: TestClient, db_available: bool):
     """GET /api/runs must return 200 and include seed row sbx-seeddemo1."""
+    if not db_available:
+        pytest.skip("PostgreSQL not available")
     resp = client.get("/api/runs")
     assert resp.status_code == 200
     runs = resp.json()
@@ -40,8 +48,10 @@ def test_list_runs_includes_seed(client: TestClient):
     assert any(r.get("sandbox_name") == "sbx-seeddemo1" for r in runs)
 
 
-def test_post_runs_valid_and_idempotent(client: TestClient):
+def test_post_runs_valid_and_idempotent(client: TestClient, db_available: bool):
     """POST /api/runs must return 201 on valid input and repeat idempotently."""
+    if not db_available:
+        pytest.skip("PostgreSQL not available")
     payload = {
         "run_id": "run-contract-test1",
         "sandbox_name": "sbx-contracttest1",
@@ -61,8 +71,10 @@ def test_post_runs_valid_and_idempotent(client: TestClient):
     assert resp2.json()["run_id"] == payload["run_id"]
 
 
-def test_post_runs_unknown_extra_fields_ignored(client: TestClient):
+def test_post_runs_unknown_extra_fields_ignored(client: TestClient, db_available: bool):
     """POST /api/runs ignores extra unexpected fields and returns 201."""
+    if not db_available:
+        pytest.skip("PostgreSQL not available")
     payload = {
         "run_id": "run-contract-extra",
         "sandbox_name": "sbx-contractextra",
@@ -115,8 +127,10 @@ def test_post_runs_validation_rejections(client: TestClient):
     assert resp_malformed.status_code == 400
 
 
-def test_seed_sql_idempotency(client: TestClient):
+def test_seed_sql_idempotency(client: TestClient, db_available: bool):
     """Applying seed SQL twice must maintain exactly one seed row."""
+    if not db_available:
+        pytest.skip("PostgreSQL not available")
     apply_seed_sql(SEED_PATH)
     apply_seed_sql(SEED_PATH)
 
