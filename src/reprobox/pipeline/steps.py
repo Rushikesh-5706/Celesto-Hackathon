@@ -151,7 +151,7 @@ def step_execute_test(
     run_id: str,
     timeout: int = 30,
 ) -> tuple[bool, str, str]:
-    cmd = f"python3 -m pytest {TEST_FILE_PATH} -p no:cacheprovider"
+    cmd = f"python3 -m pytest {TEST_FILE_PATH} -p no:cacheprovider --junitxml=/workspace/case/junit.xml"
     res = provider.run(
         guest,
         cmd,

@@ -161,7 +161,7 @@ class Guard:
         re.compile(r"^cat /workspace/[a-zA-Z0-9_\-\./]+$"),
         re.compile(r"^base64 -- /workspace/[a-zA-Z0-9_\-\./]+$"),
         re.compile(r"^base64 /workspace/[a-zA-Z0-9_\-\./]+$"),
-        re.compile(r"^python3 -m pytest /workspace/case.*$"),
+        re.compile(r"^python3 -m pytest /workspace/.*$"),
         re.compile(r"^cp -r /workspace/case/\. /workspace/scratch_ref/?$"),
         re.compile(r"^rm -rf /workspace/case/\.pytest_cache$"),
         re.compile(r"^python3 -m pip install pytest$"),
