@@ -224,7 +224,7 @@ Evidence is in `reports/evidence/lifecycle_interrupt.log`.
 ## Eval report
 
 <!-- eval:start -->
-### Batch 1 Evaluation (20 runs, commit `5ae67d9`)
+### Batch 1 Evaluation (20 runs, batch `eval-official-20`, commit `5ae67d9b`)
 
 > **Note**: All 20 verdicts in this batch were recorded as failures due to a classifier bug that misread pytest JUnit XML output. The raw timings and costs are accurate. See `reports/evidence/BATCH1_NOTE.md` for details. The batch is kept unedited as the measured record.
 
@@ -266,7 +266,12 @@ Evidence is in `reports/evidence/lifecycle_interrupt.log`.
 
 #### Rerun After Classifier Fix
 
-_Rerun not yet available. Free trial limit (2 new sandboxes per hour) prevented completing reruns within the submission window._
+Commit: `280637b4`, model: `openai/gpt-oss-120b`, provider: `cloud`.
+Ran 1 cases, 1 succeeded.
+
+| Case ID | Outcome | Reason | Wall Clock (s) |
+| --- | --- | --- | --- |
+| case-001 | PASS | none | 312.73 |
 <!-- eval:end -->
 
 ## Containment test

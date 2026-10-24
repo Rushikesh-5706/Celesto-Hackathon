@@ -1,0 +1,47 @@
+{
+  "jobs": [
+    {
+      "job_id": "job-1",
+      "sandbox_name": "sbx-zwi94ng9b9",
+      "started_at": "2026-10-23T10:24:08.184339+00:00",
+      "outcome": "rejected_at_creation",
+      "error": "pipeline_error"
+    },
+    {
+      "job_id": "job-2",
+      "sandbox_name": "sbx-mu12vbrans",
+      "started_at": "2026-10-23T10:24:08.184268+00:00",
+      "outcome": "rejected_at_creation",
+      "error": "pipeline_error"
+    },
+    {
+      "job_id": "job-3",
+      "sandbox_name": "sbx-1mw6iqzf18",
+      "started_at": "2026-10-23T10:24:08.184602+00:00",
+      "outcome": "rejected_at_creation",
+      "error": "pipeline_error"
+    },
+    {
+      "job_id": "job-4",
+      "sandbox_name": "sbx-y37858fpfw",
+      "started_at": "2026-10-23T10:24:08.184513+00:00",
+      "outcome": "rejected_at_creation",
+      "error": "pipeline_error"
+    },
+    {
+      "job_id": "job-5",
+      "sandbox_name": "sbx-dukhjrpxxu",
+      "started_at": "2026-10-23T10:24:08.184443+00:00",
+      "outcome": "rejected_at_creation",
+      "error": "pipeline_error"
+    },
+    {
+      "job_id": "job-6",
+      "sandbox_name": "sbx-fbqydzpkau",
+      "started_at": "2026-10-23T10:24:08.183979+00:00",
+      "outcome": "failed",
+      "error": "test_not_authored"
+    }
+  ],
+  "breakage_notes": "I started 6 concurrent jobs, each with a unique random sandbox label. 5 of 6 were rejected at sandbox creation (short wall clock with pipeline_error, consistent with rate limiting). 1 of 6 reached a sandbox but failed during the run (test_not_authored). No sandbox name collisions occurred because each label contains a unique cryptographically random token and the ledger checks for duplicates before dispatch."
+}
