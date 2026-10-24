@@ -1,0 +1,26 @@
+{
+  "case_id": "case-001",
+  "run_id": "rerun-case-001-i262c86min",
+  "sandbox_name": "sbx-i262c86min",
+  "computer_id": "cmp_f52eaeb751ab",
+  "outcome": "succeeded",
+  "success": true,
+  "failure_reason": null,
+  "wall_clock_s": 312.731,
+  "boot_to_ready_s": 23.98,
+  "prompt_tokens": 22418,
+  "completion_tokens": 1357,
+  "cost_usd": 0.0026,
+  "step_timings": {
+    "provision": 11.77,
+    "boot_probe": 12.209,
+    "stage_case": 65.56,
+    "baseline": 4.421,
+    "agent_loop": 167.857,
+    "persist_test": 5.557,
+    "execute_test": 5.079,
+    "classify_failure": 5.67,
+    "verify_reference": 28.683
+  },
+  "preview_url_status": 0
+}

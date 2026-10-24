@@ -1,0 +1,12 @@
+{
+  "case_id": "case-001",
+  "sandbox_name": "sbx-i262c86min",
+  "computer_id": "cmp_f52eaeb751ab",
+  "success": true,
+  "failure_reason": null,
+  "wall_clock_s": 312.731,
+  "boot_to_ready_s": 23.98,
+  "prompt_tokens": 22418,
+  "completion_tokens": 1357,
+  "cost_usd": 0.0026
+}

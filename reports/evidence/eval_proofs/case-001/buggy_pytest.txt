@@ -1,0 +1,28 @@
+STDOUT:
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+rootdir: /workspace/case/tests
+collected 1 item
+
+workspace/case/tests/test_issue_repro.py F                               [100%]
+
+=================================== FAILURES ===================================
+__________________ test_last_page_exact_boundary_missing_item __________________
+
+    def test_last_page_exact_boundary_missing_item():
+        # 10 items, page size 5, so two full pages. The second page should contain items 6-10.
+        items = list(range(1, 11))
+        result = paginate(items, page=2, per_page=5)
+>       assert result == [6, 7, 8, 9, 10]
+E       assert [6, 7, 8, 9] == [6, 7, 8, 9, 10]
+E         
+E         Right contains one more item: 10
+E         Use -v to get more diff
+
+workspace/case/tests/test_issue_repro.py:7: AssertionError
+---------------- generated xml file: /workspace/case/junit.xml -----------------
+=========================== short test summary info ============================
+FAILED workspace/case/tests/test_issue_repro.py::test_last_page_exact_boundary_missing_item
+============================== 1 failed in 0.02s ===============================
+
+STDERR:

@@ -1,15 +1,11 @@
 import importlib
 import pytest
 
-def test_debug_setting_parsed_from_env(monkeypatch):
-    """Bug: Boolean config flags from strings are not parsed correctly.
-    The function should interpret the environment variable ``DEBUG`` set to
-    a truthy string (e.g., "true") as ``True``.
-    """
-    # Set environment variable to a truthy string
-    monkeypatch.setenv('DEBUG', 'true')
-    # Reload the module to simulate reading env (if it were implemented)
-    app = importlib.import_module('conf.app')
-    importlib.reload(app)
-    # Expect the setting to be True, but current implementation returns False
-    assert app.get_setting('debug') is True
+def test_debug_setting_parsed_as_boolean():
+    # Import the configuration module where defaults are defined
+    config = importlib.import_module('conf.app')
+    # Simulate a configuration where the debug flag is set as a string "true"
+    config.DEFAULTS['debug'] = "true"
+    # The expected behavior is that get_setting returns a boolean True,
+    # but the current implementation returns the raw string value.
+    assert config.get_setting('debug') is True, "debug flag should be parsed as True"
