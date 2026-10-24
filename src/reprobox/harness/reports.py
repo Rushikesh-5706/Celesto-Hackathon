@@ -453,7 +453,7 @@ def build_concurrency_json() -> None:
     if probe_log.exists():
         probe_text = probe_log.read_text(encoding="utf-8")
         # Extract the quoted error message
-        m = re.search(r'error["\s:]+([^\n"]{20,})', probe_text, re.IGNORECASE)
+        m = re.search(r'(?:raw|error)["\s:]+([^\n"]{20,})', probe_text, re.IGNORECASE)
         if m:
             trial_error_text = m.group(1).strip()
 

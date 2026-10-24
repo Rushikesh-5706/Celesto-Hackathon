@@ -12,7 +12,7 @@ and authors pytest reproductions verified against reference fixes.
 | Rerun After Fix | See `reports/evidence/BATCH1_NOTE.md` and eval table below |
 | Demo Walkthrough | [demo/walkthrough.mp4](demo/walkthrough.mp4) |
 
-## AI assistance
+## Tooling and AI assistance
 
 I used Antigravity as a coding assistant and Claude for planning and review. I have read and can explain the code in this repository. The main libraries are FastAPI, psycopg, httpx and the Celesto SDK (Apache 2.0).
 

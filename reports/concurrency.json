@@ -43,5 +43,5 @@
       "error": "test_not_authored"
     }
   ],
-  "breakage_notes": "I started 6 concurrent jobs, each with a unique random sandbox label. 5 of 6 were rejected at sandbox creation (short wall clock with pipeline_error, consistent with rate limiting). 1 of 6 reached a sandbox but failed during the run (test_not_authored). No sandbox name collisions occurred because each label contains a unique cryptographically random token and the ledger checks for duplicates before dispatch."
+  "breakage_notes": "I started 6 concurrent jobs, each with a unique random sandbox label. 5 of 6 were rejected at sandbox creation (short wall clock with pipeline_error, consistent with rate limiting). 1 of 6 reached a sandbox but failed during the run (test_not_authored). No sandbox name collisions occurred because each label contains a unique cryptographically random token and the ledger checks for duplicates before dispatch. Trial limit error text: Cloud API returned HTTP 429. The server is limiting requests; inspect your cloud account limits before retrying, or ask Celesto support which limit applies. Request ID: a3d09f999b26a7790881756e6ed9b715."
 }

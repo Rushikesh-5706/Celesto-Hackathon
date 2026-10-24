@@ -1,0 +1,3 @@
+command: provision sandbox=sbx-probing01
+timestamp: 2026-10-24T08:20:15.712987+00:00
+raw: Cloud API returned HTTP 429. The server is limiting requests; inspect your cloud account limits before retrying, or ask Celesto support which limit applies. Request ID: a3d09f999b26a7790881756e6ed9b715.
