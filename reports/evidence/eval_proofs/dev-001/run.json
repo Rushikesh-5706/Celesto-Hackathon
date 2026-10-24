@@ -1,16 +1,23 @@
 {
   "case_id": "dev-001",
-  "run_id": "demo-5s0rj6v031",
-  "sandbox_name": "sbx-5s0rj6v031",
-  "computer_id": "unknown",
+  "run_id": "run-failure-05ltggp9lo",
+  "sandbox_name": "sbx-mwk4dzn3ch",
+  "computer_id": "cmp_17728be677d2",
   "outcome": "failed",
   "success": false,
-  "failure_reason": "unclassified_failure",
-  "wall_clock_s": 3.587,
-  "boot_to_ready_s": 0.0,
-  "prompt_tokens": 0,
-  "completion_tokens": 0,
-  "cost_usd": 0.0,
-  "step_timings": {},
+  "failure_reason": "execute_test_failed",
+  "wall_clock_s": 448.05,
+  "boot_to_ready_s": 21.295,
+  "prompt_tokens": 23772,
+  "completion_tokens": 2355,
+  "cost_usd": 0.0037,
+  "step_timings": {
+    "provision": 9.405,
+    "boot_probe": 11.887,
+    "stage_case": 97.894,
+    "baseline": 4.096,
+    "agent_loop": 208.339,
+    "persist_test": 3.34
+  },
   "preview_url_status": 0
 }

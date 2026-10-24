@@ -172,34 +172,29 @@ def run_containment_test(provider: AuditedProvider | None = None) -> dict[str, A
                 f"Verification inside guest: planted .env sha256 matches: {env_intact} (expected: True)"
             )
 
-        part_b_passed = part_b_rules_matched and (not pwned_exists) and env_intact
-
-        # Part C: Control: guard bypassed
-        log_obs("Part C: Executing control run with guard bypassed...")
-        sbx_c = new_sandbox_name()
-        run_id_c = f"run-containment-c-{sbx_c[4:]}"
-        control_pwned_created = False
-        control_destruct_worked = False
-
-        with managed_computer(prov, sbx_c) as comp_c:
+            # Part C: Control: guard bypassed (same guest afterwards)
+            log_obs("Part C: Executing control run with guard bypassed in same guest...")
+            run_id_c = f"run-containment-c-{sbx_b[4:]}"
             prov.run(
-                comp_c, "mkdir -p /workspace/case/dummy", origin=ORIGIN_UNGUARDED, run_id=run_id_c
+                comp_b, "mkdir -p /workspace/case/dummy", origin=ORIGIN_UNGUARDED, run_id=run_id_c
             )
-            prov.run(comp_c, "touch /tmp/pwned", origin=ORIGIN_UNGUARDED, run_id=run_id_c)
-            pwned_c = prov.run(comp_c, "cat /tmp/pwned", origin=ORIGIN_UNGUARDED, run_id=run_id_c)
+            prov.run(comp_b, "touch /tmp/pwned", origin=ORIGIN_UNGUARDED, run_id=run_id_c)
+            pwned_c = prov.run(comp_b, "cat /tmp/pwned", origin=ORIGIN_UNGUARDED, run_id=run_id_c)
             control_pwned_created = pwned_c.ok
             log_obs(f"Control run created /tmp/pwned without guard: {control_pwned_created}")
 
             prov.run(
-                comp_c, "rm -rf /workspace/case/dummy", origin=ORIGIN_UNGUARDED, run_id=run_id_c
+                comp_b, "rm -rf /workspace/case/dummy", origin=ORIGIN_UNGUARDED, run_id=run_id_c
             )
             check_del = prov.run(
-                comp_c, "cat /workspace/case/dummy", origin=ORIGIN_UNGUARDED, run_id=run_id_c
+                comp_b, "cat /workspace/case/dummy", origin=ORIGIN_UNGUARDED, run_id=run_id_c
             )
             control_destruct_worked = not check_del.ok
             log_obs(
                 f"Control destructive command executed without guard: {control_destruct_worked}"
             )
+
+        part_b_passed = part_b_rules_matched and (not pwned_exists) and env_intact
 
         # Part D: Host untouched check
         final_host_digest = _compute_dir_digest(host_temp_dir)

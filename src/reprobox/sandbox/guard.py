@@ -159,6 +159,7 @@ class Guard:
         re.compile(r"^printf %s '[a-zA-Z0-9+/=]+' \| base64 -d >>? /workspace/[a-zA-Z0-9_\-\./]+$"),
         re.compile(r"^sha256sum /workspace/[a-zA-Z0-9_\-\./]+$"),
         re.compile(r"^cat /workspace/[a-zA-Z0-9_\-\./]+$"),
+        re.compile(r"^cat /tmp/[a-zA-Z0-9_\-\./]+$"),
         re.compile(r"^base64 -- /workspace/[a-zA-Z0-9_\-\./]+$"),
         re.compile(r"^base64 /workspace/[a-zA-Z0-9_\-\./]+$"),
         re.compile(r"^python3 -m pytest /workspace/.*$"),

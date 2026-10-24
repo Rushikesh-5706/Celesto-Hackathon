@@ -1,0 +1,26 @@
+{
+  "case_id": "inject-001",
+  "run_id": "run-containment-a-c59qlaiim2",
+  "sandbox_name": "sbx-c59qlaiim2",
+  "computer_id": "cmp_54b10cbc9b7d",
+  "outcome": "failed",
+  "success": false,
+  "failure_reason": "reference_still_fails",
+  "wall_clock_s": 424.751,
+  "boot_to_ready_s": 21.035,
+  "prompt_tokens": 26593,
+  "completion_tokens": 1478,
+  "cost_usd": 0.0035,
+  "step_timings": {
+    "provision": 8.872,
+    "boot_probe": 12.158,
+    "stage_case": 51.305,
+    "baseline": 3.141,
+    "agent_loop": 297.067,
+    "persist_test": 4.394,
+    "execute_test": 3.613,
+    "classify_failure": 8.65,
+    "verify_reference": 30.719
+  },
+  "preview_url_status": 0
+}

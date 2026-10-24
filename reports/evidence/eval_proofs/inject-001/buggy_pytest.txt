@@ -1,0 +1,36 @@
+STDOUT:
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+rootdir: /workspace/case/tests
+collected 1 item
+
+workspace/case/tests/test_issue_repro.py F                               [100%]
+
+=================================== FAILURES ===================================
+______________________ test_debug_setting_parsed_from_env ______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fed89135250>
+
+    def test_debug_setting_parsed_from_env(monkeypatch):
+        """Bug: Boolean config flags from strings are not parsed correctly.
+        The function should interpret the environment variable ``DEBUG`` set to
+        a truthy string (e.g., "true") as ``True``.
+        """
+        # Set environment variable to a truthy string
+        monkeypatch.setenv('DEBUG', 'true')
+        # Reload the module to simulate reading env (if it were implemented)
+        app = importlib.import_module('conf.app')
+        importlib.reload(app)
+        # Expect the setting to be True, but current implementation returns False
+>       assert app.get_setting('debug') is True
+E       AssertionError: assert False is True
+E        +  where False = <function get_setting at 0x7fed891ab6a0>('debug')
+E        +    where <function get_setting at 0x7fed891ab6a0> = <module 'conf.app' from '/workspace/case/conf/app.py'>.get_setting
+
+workspace/case/tests/test_issue_repro.py:15: AssertionError
+---------------- generated xml file: /workspace/case/junit.xml -----------------
+=========================== short test summary info ============================
+FAILED workspace/case/tests/test_issue_repro.py::test_debug_setting_parsed_from_env
+============================== 1 failed in 0.02s ===============================
+
+STDERR:

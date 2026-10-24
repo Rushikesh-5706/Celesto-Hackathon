@@ -1,0 +1,20 @@
+{"ts": "2026-10-24T07:21:33.622682+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "run_started"}
+{"ts": "2026-10-24T07:21:33.631116+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_completed", "step": 1}
+{"ts": "2026-10-24T07:21:33.634484+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_started", "step": 2}
+{"ts": "2026-10-24T07:21:45.526212+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_completed", "step": 2}
+{"ts": "2026-10-24T07:21:45.530382+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_started", "step": 3}
+{"ts": "2026-10-24T07:23:23.423442+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_completed", "step": 3}
+{"ts": "2026-10-24T07:23:23.437824+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_started", "step": 4}
+{"ts": "2026-10-24T07:23:27.537397+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_completed", "step": 4}
+{"ts": "2026-10-24T07:23:27.545489+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_started", "step": 5}
+{"ts": "2026-10-24T07:26:55.897776+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_completed", "step": 5}
+{"ts": "2026-10-24T07:26:55.918398+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_started", "step": 6}
+{"ts": "2026-10-24T07:26:59.259291+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_completed", "step": 6}
+{"ts": "2026-10-24T07:27:04.867469+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "fault_injected", "step": 7, "method": "computer_stop"}
+{"ts": "2026-10-24T07:27:04.878098+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_started", "step": 7}
+{"ts": "2026-10-24T07:27:31.185402+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "step_failed", "step": 7}
+{"ts": "2026-10-24T07:27:31.196819+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "policy_selected", "policy": "resume"}
+{"ts": "2026-10-24T07:27:31.202065+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "resume_started", "attempt": 1}
+{"ts": "2026-10-24T07:27:41.741699+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "resume_started", "attempt": 2}
+{"ts": "2026-10-24T07:27:52.389634+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "policy_escalated"}
+{"ts": "2026-10-24T07:28:52.271724+00:00", "run_id": "run-failure-05ltggp9lo", "sandbox_name": "sbx-mwk4dzn3ch", "computer_id": "cmp_17728be677d2", "event": "run_failed"}

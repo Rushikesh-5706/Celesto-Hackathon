@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.019" timestamp="2026-10-24T07:35:11.116992+00:00" hostname="celesto"><testcase classname="test_issue_repro" name="test_debug_setting_parsed_from_env" time="0.001"><failure message="AssertionError: assert False is True&#10; +  where False = &lt;function get_setting at 0x7fed891ab6a0&gt;('debug')&#10; +    where &lt;function get_setting at 0x7fed891ab6a0&gt; = &lt;module 'conf.app' from '/workspace/case/conf/app.py'&gt;.get_setting">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7fed89135250&gt;
+
+    def test_debug_setting_parsed_from_env(monkeypatch):
+        """Bug: Boolean config flags from strings are not parsed correctly.
+        The function should interpret the environment variable ``DEBUG`` set to
+        a truthy string (e.g., "true") as ``True``.
+        """
+        # Set environment variable to a truthy string
+        monkeypatch.setenv('DEBUG', 'true')
+        # Reload the module to simulate reading env (if it were implemented)
+        app = importlib.import_module('conf.app')
+        importlib.reload(app)
+        # Expect the setting to be True, but current implementation returns False
+&gt;       assert app.get_setting('debug') is True
+E       AssertionError: assert False is True
+E        +  where False = &lt;function get_setting at 0x7fed891ab6a0&gt;('debug')
+E        +    where &lt;function get_setting at 0x7fed891ab6a0&gt; = &lt;module 'conf.app' from '/workspace/case/conf/app.py'&gt;.get_setting
+
+workspace/case/tests/test_issue_repro.py:15: AssertionError</failure></testcase></testsuite></testsuites>

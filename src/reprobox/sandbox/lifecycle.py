@@ -67,6 +67,8 @@ _handlers_installed = False
 def _handle_exit_signal(signum: int, frame: Any) -> None:
     logger.warning("Received signal %d, cleaning up active computers", signum)
     registry.cleanup_all()
+    if signum == signal.SIGINT:
+        raise KeyboardInterrupt()
     sys.exit(128 + signum)
 
 
