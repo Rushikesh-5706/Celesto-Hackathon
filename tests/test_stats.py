@@ -1,4 +1,4 @@
-"""Unit tests for statistical calculations per Section 16.1."""
+"""Unit tests for statistical calculations."""
 
 from reprobox.harness.stats import compute_median, compute_p90, compute_summary_stats
 

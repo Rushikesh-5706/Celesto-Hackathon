@@ -1,0 +1,36 @@
+/Users/rushikesh/Celesto Hackathon/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-8.3.3, pluggy-1.7.0 -- /Users/rushikesh/Celesto Hackathon/.venv/bin/python3
+rootdir: /Users/rushikesh/Celesto Hackathon
+configfile: pyproject.toml
+plugins: asyncio-0.24.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, default_loop_scope=None
+collecting ... collected 1 item
+
+fixtures/cases/case-002/author_probe/test_probe.py::test_timezone_aware_comparison FAILED [100%]
+
+=================================== FAILURES ===================================
+________________________ test_timezone_aware_comparison ________________________
+
+    def test_timezone_aware_comparison():
+        aware_future = datetime(2099, 1, 1, tzinfo=timezone.utc)
+>       assert not is_expired(aware_future)
+
+fixtures/cases/case-002/author_probe/test_probe.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+target = datetime.datetime(2099, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)
+
+    def is_expired(target: datetime) -> bool:
+        now = datetime.now()
+>       return target < now
+E       TypeError: can't compare offset-naive and offset-aware datetimes
+
+fixtures/cases/case-002/repo/expiry/checker.py:5: TypeError
+- generated xml file: /Users/rushikesh/Celesto Hackathon/tests/data/junit_typeerror.xml -
+=========================== short test summary info ============================
+FAILED fixtures/cases/case-002/author_probe/test_probe.py::test_timezone_aware_comparison
+============================== 1 failed in 0.02s ===============================

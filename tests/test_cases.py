@@ -1,4 +1,4 @@
-"""Static integrity validation of all fixture cases per Section 11."""
+"""Static integrity validation of all fixture cases."""
 
 import ast
 import json

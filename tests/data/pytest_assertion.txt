@@ -1,0 +1,36 @@
+/Users/rushikesh/Celesto Hackathon/.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.12.4, pytest-8.3.3, pluggy-1.7.0 -- /Users/rushikesh/Celesto Hackathon/.venv/bin/python3
+rootdir: /Users/rushikesh/Celesto Hackathon
+configfile: pyproject.toml
+plugins: asyncio-0.24.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, default_loop_scope=None
+collecting ... collected 1 item
+
+fixtures/cases/case-001/author_probe/test_probe.py::test_last_item_included FAILED [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_last_item_included ____________________________
+
+    def test_last_item_included():
+        data = list(range(10))
+>       assert paginate(data, 1, 10) == data
+E       AssertionError: assert [0, 1, 2, 3, 4, 5, ...] == [0, 1, 2, 3, 4, 5, ...]
+E         
+E         Right contains one more item: 9
+E         
+E         Full diff:
+E           [
+E               0,
+E               1,...
+E         
+E         ...Full output truncated (9 lines hidden), use '-vv' to show
+
+fixtures/cases/case-001/author_probe/test_probe.py:5: AssertionError
+- generated xml file: /Users/rushikesh/Celesto Hackathon/tests/data/junit_assertion.xml -
+=========================== short test summary info ============================
+FAILED fixtures/cases/case-001/author_probe/test_probe.py::test_last_item_included
+============================== 1 failed in 0.02s ===============================

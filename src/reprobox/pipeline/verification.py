@@ -1,8 +1,7 @@
-"""Mechanical right-reason verification and JUnit XML classification."""
-
 from __future__ import annotations
 
 import logging
+import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 
@@ -19,13 +18,60 @@ class ClassificationResult:
     traceback: str | None = None
 
 
+RE_FILE_EXCEPTION = re.compile(r"^\S+:\d+:\s*([A-Za-z_][\w.]*)\s*$")
+RE_E_LINE = re.compile(r"^E\s+([A-Za-z_][\w.]*)(:|\s|$)")
+
+ALWAYS_REJECTED_EXCEPTIONS = {
+    "ImportError",
+    "ModuleNotFoundError",
+    "SyntaxError",
+    "NameError",
+    "IndentationError",
+}
+
+
+def extract_exception_type(failure_type_attr: str, failure_text: str, message: str) -> str:
+    # 1. Type attribute if non-empty
+    if failure_type_attr and failure_type_attr.strip():
+        return failure_type_attr.strip()
+
+    lines = [line.strip() for line in failure_text.splitlines() if line.strip()]
+
+    # 2. Last line of failure text matching ^\S+:\d+: ([A-Za-z_][\w.]*)\s*$
+    for line in reversed(lines):
+        m = RE_FILE_EXCEPTION.match(line)
+        if m:
+            return m.group(1)
+
+    # 3. Last E line matching ^E\s+([A-Za-z_][\w.]*)(:|\s|$)
+    for line in reversed(lines):
+        m = RE_E_LINE.match(line)
+        if m:
+            cand = m.group(1)
+            if cand != "assert":
+                return cand
+
+    # 4. If text contains an assert line prefixed by E or message contains assert
+    for line in lines:
+        if (
+            line.startswith("E   assert")
+            or line.startswith("E  assert")
+            or line == "E   AssertionError"
+        ):
+            return "AssertionError"
+    if "assert " in message or "AssertionError" in message:
+        return "AssertionError"
+
+    return "unclassified_failure"
+
+
 def parse_and_classify_junit(
     junit_xml: str,
-    target_symbol: str,
+    target_symbol: str = "",
     expected_exception: str = "AssertionError",
     test_source: str = "",
+    source_files: list[str] | None = None,
 ) -> ClassificationResult:
-    """Parse pytest JUnit XML and verify failure is for the right reason."""
     try:
         root = ET.fromstring(junit_xml)
     except ET.ParseError as e:
@@ -36,12 +82,12 @@ def parse_and_classify_junit(
         )
 
     # Find testsuite element
-    suite = root if root.tag == "testsuite" else root.find("testsuite")
+    suite = root if root.tag == "testsuite" else root.find(".//testsuite")
     if suite is None:
         return ClassificationResult(
             passed=False,
             reason_code="collection_error",
-            details="Missing <testsuite> root element in JUnit XML",
+            details="Missing <testsuite> element in JUnit XML",
         )
 
     total_tests = int(suite.attrib.get("tests", 0))
@@ -52,10 +98,10 @@ def parse_and_classify_junit(
         return ClassificationResult(
             passed=False,
             reason_code="collection_error",
-            details=f"Expected exactly 1 test and 1 failure, got {total_tests} tests, {failures} failures, {errors} errors",
+            details=f"Expected exactly 1 test, 1 failure, 0 errors; got {total_tests} tests, {failures} failures, {errors} errors",
         )
 
-    testcase = suite.find("testcase")
+    testcase = suite.find(".//testcase")
     if testcase is None:
         return ClassificationResult(
             passed=False,
@@ -72,77 +118,76 @@ def parse_and_classify_junit(
             details="Test did not record a <failure> node",
         )
 
-    fail_type = failure_node.attrib.get("type", "")
+    fail_type_attr = failure_node.attrib.get("type", "")
     traceback = failure_node.text or ""
     message = failure_node.attrib.get("message", "")
 
-    # Pytest's standard JUnit XML omits type=; extract exception from traceback or message
-    if not fail_type:
-        for line in reversed(traceback.strip().splitlines()):
-            words = line.strip().split()
-            for w in words:
-                cleaned = w.strip(":,()\"'")
-                if cleaned.endswith("Error") or cleaned.endswith("Exception"):
-                    fail_type = cleaned
-                    break
-            if fail_type:
+    extracted_type = extract_exception_type(fail_type_attr, traceback, message)
+    if extracted_type == "unclassified_failure":
+        return ClassificationResult(
+            passed=False,
+            reason_code="unclassified_failure",
+            details="Could not determine exception type from failure traceback or message",
+            failure_type=extracted_type,
+            test_name=test_name,
+            traceback=traceback,
+        )
+
+    if extracted_type in ALWAYS_REJECTED_EXCEPTIONS:
+        return ClassificationResult(
+            passed=False,
+            reason_code="wrong_failure_type",
+            details=f"Rejected collection/syntax/import exception: {extracted_type}",
+            failure_type=extracted_type,
+            test_name=test_name,
+            traceback=traceback,
+        )
+
+    expected = expected_exception or "AssertionError"
+    if extracted_type != "AssertionError" and extracted_type != expected:
+        return ClassificationResult(
+            passed=False,
+            reason_code="wrong_failure_type",
+            details=f"Extracted exception '{extracted_type}' does not match expected '{expected}' or 'AssertionError'",
+            failure_type=extracted_type,
+            test_name=test_name,
+            traceback=traceback,
+        )
+
+    target_exercised = False
+    if target_symbol and (target_symbol in test_source or target_symbol in traceback):
+        target_exercised = True
+
+    if source_files:
+        for sf in source_files:
+            if sf in traceback:
+                target_exercised = True
                 break
-        if not fail_type and ("AssertionError" in traceback or "assert" in message):
-            fail_type = "AssertionError"
 
-    # Check 2: Failure type must not be a test-collection/import error.
-    # Only reject exceptions that indicate the test never ran (setup failures).
-    # Runtime exceptions like TypeError, ZeroDivisionError, KeyError, AttributeError
-    # are all valid bug-reproduction outcomes and must NOT be rejected.
-    disallowed_exceptions = (
-        "ImportError",
-        "ModuleNotFoundError",
-        "SyntaxError",
-    )
+    # If traceback mentions a non-test frame in repo
+    for line in traceback.splitlines():
+        if "/workspace/case/" in line and "/tests/" not in line:
+            target_exercised = True
+            break
+        if "repo/" in line and "test" not in line:
+            target_exercised = True
+            break
 
-    if any(dis in fail_type for dis in disallowed_exceptions):
+    if not target_exercised:
         return ClassificationResult(
             passed=False,
-            reason_code="wrong_failure_type",
-            details=f"Failure type '{fail_type}' indicates a test collection/import error, not a bug reproduction",
-            failure_type=fail_type,
+            reason_code="target_not_exercised",
+            details=f"Target '{target_symbol}' was not exercised in test source or traceback",
+            failure_type=extracted_type,
             test_name=test_name,
             traceback=traceback,
         )
-
-    # Accept any non-empty failure type: AssertionError, TypeError, ZeroDivisionError,
-    # KeyError, ValueError, AttributeError, NameError, RuntimeError, etc.
-    # The expected_exception field acts as a hint, not a strict filter.
-    # If expected_exception is set and fail_type is non-trivially populated, allow it
-    # as long as it is not a collection-phase error already filtered above.
-    if not fail_type:
-        return ClassificationResult(
-            passed=False,
-            reason_code="wrong_failure_type",
-            details="Could not determine exception type from JUnit XML",
-            failure_type=fail_type,
-            test_name=test_name,
-            traceback=traceback,
-        )
-
-    # Check 3: target_symbol is exercised in test source or traceback
-    if target_symbol:
-        exercised = (target_symbol in traceback) or (target_symbol in test_source)
-        if not exercised:
-            return ClassificationResult(
-                passed=False,
-                reason_code="target_not_exercised",
-                details=f"Target symbol '{target_symbol}' was not exercised in traceback or test source",
-                failure_type=fail_type,
-                test_name=test_name,
-                traceback=traceback,
-            )
 
     return ClassificationResult(
         passed=True,
         reason_code="ok",
         details="Failure successfully matched right-reason criteria",
-        failure_type=fail_type,
+        failure_type=extracted_type,
         test_name=test_name,
         traceback=traceback,
     )

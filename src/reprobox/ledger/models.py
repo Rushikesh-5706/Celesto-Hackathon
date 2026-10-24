@@ -15,6 +15,7 @@ class RunRecord:
     state: str
     execution_target: str
     outcome: str | None = None
+    computer_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -26,6 +27,7 @@ class RunRecord:
             "state": self.state,
             "execution_target": self.execution_target,
             "outcome": self.outcome,
+            "computer_id": self.computer_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

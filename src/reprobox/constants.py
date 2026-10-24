@@ -83,6 +83,7 @@ GUARD_BLOCK: str = "block"
 # Command origins understood by the audit system.
 ORIGIN_PIPELINE: str = "pipeline"
 ORIGIN_AGENT: str = "agent"
+ORIGIN_UNGUARDED: str = "unguarded_control"
 
 # Allowed models for the report builder to accept as evidence providers.
 ALLOWED_PROVIDERS: frozenset[str] = frozenset(["celesto_sandbox"])
@@ -103,3 +104,7 @@ REPORT_WHITELIST: frozenset[str] = frozenset(
         "README.md",
     ]
 )
+
+SANDBOX_PRICE_PER_HOUR_USD: float = 0.03
+LLM_INPUT_PRICE_PER_MTOK_USD: float = 0.0
+LLM_OUTPUT_PRICE_PER_MTOK_USD: float = 0.0

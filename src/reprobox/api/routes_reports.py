@@ -44,11 +44,10 @@ def _resolve_report_path(name: str) -> Path | None:
         return None
 
     if name == "README.md":
-        return Path(__file__).resolve().parents[3] / "README.md"
+        return settings.readme_path
     if name == "commands.jsonl":
-        return settings.audit_log_path
+        return settings.committed_commands_log
 
-    # Remaining files are in reports/
     return settings.reports_dir / name
 
 

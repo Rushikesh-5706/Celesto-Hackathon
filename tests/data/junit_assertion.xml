@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.025" timestamp="2026-10-24T07:03:43.490570+05:30" hostname="Rushikeshs-MacBook-Pro-1375.local"><testcase classname="fixtures.cases.case-001.author_probe.test_probe" name="test_last_item_included" time="0.000"><failure message="AssertionError: assert [0, 1, 2, 3, 4, 5, ...] == [0, 1, 2, 3, 4, 5, ...]&#10;  &#10;  Right contains one more item: 9&#10;  &#10;  Full diff:&#10;    [&#10;        0,&#10;        1,...&#10;  &#10;  ...Full output truncated (9 lines hidden), use '-vv' to show">def test_last_item_included():
+        data = list(range(10))
+&gt;       assert paginate(data, 1, 10) == data
+E       AssertionError: assert [0, 1, 2, 3, 4, 5, ...] == [0, 1, 2, 3, 4, 5, ...]
+E         
+E         Right contains one more item: 9
+E         
+E         Full diff:
+E           [
+E               0,
+E               1,...
+E         
+E         ...Full output truncated (9 lines hidden), use '-vv' to show
+
+fixtures/cases/case-001/author_probe/test_probe.py:5: AssertionError</failure></testcase></testsuite></testsuites>

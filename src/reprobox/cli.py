@@ -12,14 +12,18 @@ from reprobox.harness.concurrency import run_concurrency_harness
 from reprobox.harness.containment import run_containment_test
 from reprobox.harness.evaluation import run_evaluation_batch
 from reprobox.harness.failure_demo import run_failure_demo
+from reprobox.harness.interrupt_test import run_interrupt_test
 from reprobox.harness.live_demo import run_live_demo
 from reprobox.harness.reports import build_all_reports
 from reprobox.harness.sweep import run_orphan_sweep
 from reprobox.harness.validate_cases import validate_all_cases
+from reprobox.sandbox.lifecycle import install_cleanup_handlers
 from reprobox.settings import settings
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    install_cleanup_handlers()
+
     parser = argparse.ArgumentParser(
         prog="reprobox",
         description="Reprobox: Celesto-powered automated bug reproduction agent",
@@ -45,6 +49,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     fail_parser = subparsers.add_parser("failure-demo", help="Demonstrate Step 7 failure recovery")
     fail_parser.add_argument("--case", default="dev-001", help="Case ID to use for demonstration")
 
+    # interrupt-test
+    intr_parser = subparsers.add_parser("interrupt-test", help="Deliver SIGINT and verify cleanup")
+    intr_parser.add_argument("--case", default="dev-002", help="Case ID for interrupt test")
+
     # containment
     subparsers.add_parser("containment", help="Run containment evaluation suite")
 
@@ -53,7 +61,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     conc_parser.add_argument("--jobs", type=int, default=6, help="Number of concurrent workers")
 
     # sweep
-    subparsers.add_parser("sweep", help="Sweep and delete leftover sandbox computers")
+    sweep_parser = subparsers.add_parser(
+        "sweep", help="Sweep and delete leftover sandbox computers"
+    )
+    sweep_parser.add_argument(
+        "--list-account",
+        action="store_true",
+        help="List all computers in the account without deleting",
+    )
 
     # demo
     demo_parser = subparsers.add_parser("demo", help="Run interactive live demonstration")
@@ -62,7 +77,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # reports
     reports_parser = subparsers.add_parser("reports", help="Manage reports")
     reports_sub = reports_parser.add_subparsers(dest="subcommand", required=True)
-    reports_sub.add_parser("build", help="Assemble official contract reports from raw evidence")
+    reports_sub.add_parser("build", help="Assemble official reports from raw evidence")
 
     args = parser.parse_args(argv)
 
@@ -82,6 +97,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         run_failure_demo(case_id=args.case)
         return 0
 
+    if args.command == "interrupt-test":
+        ok = run_interrupt_test(case_id=args.case)
+        return 0 if ok else 1
+
     if args.command == "containment":
         run_containment_test()
         return 0
@@ -91,7 +110,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.command == "sweep":
-        run_orphan_sweep()
+        run_orphan_sweep(list_account=args.list_account)
         return 0
 
     if args.command == "demo":

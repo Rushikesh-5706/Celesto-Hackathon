@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.021" timestamp="2026-10-24T07:03:43.654418+05:30" hostname="Rushikeshs-MacBook-Pro-1375.local"><testcase classname="fixtures.cases.case-002.author_probe.test_probe" name="test_timezone_aware_comparison" time="0.000"><failure message="TypeError: can't compare offset-naive and offset-aware datetimes">def test_timezone_aware_comparison():
+        aware_future = datetime(2099, 1, 1, tzinfo=timezone.utc)
+&gt;       assert not is_expired(aware_future)
+
+fixtures/cases/case-002/author_probe/test_probe.py:6: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+target = datetime.datetime(2099, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)
+
+    def is_expired(target: datetime) -&gt; bool:
+        now = datetime.now()
+&gt;       return target &lt; now
+E       TypeError: can't compare offset-naive and offset-aware datetimes
+
+fixtures/cases/case-002/repo/expiry/checker.py:5: TypeError</failure></testcase></testsuite></testsuites>

@@ -1,4 +1,4 @@
-"""Statistical calculations for evaluation runs complying with Appendix A & Section 16.1."""
+"""Statistical calculations for evaluation runs."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 
 
 def compute_median(values: Sequence[float]) -> float:
-    """Compute median using Section 16.1 rules."""
+    """Compute median from sorted values."""
     if not values:
         return 0.0
     sorted_vals = sorted(values)

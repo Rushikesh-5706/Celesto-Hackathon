@@ -1,4 +1,4 @@
-"""AST scan verifying Law L2: the host never executes untrusted or external processes."""
+"""AST scan verifying Law L2: host never executes untrusted processes or eval/exec."""
 
 import ast
 from pathlib import Path
@@ -6,6 +6,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = REPO_ROOT / "src"
 SCRIPTS_DIR = REPO_ROOT / "scripts"
+TESTS_DIR = REPO_ROOT / "tests"
 
 FORBIDDEN_CALLS = {"eval", "exec", "compile"}
 FORBIDDEN_MODULES = {"subprocess", "pty"}
@@ -46,14 +47,12 @@ class HostExecVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
-        # Bare name calls: eval(...), exec(...)
         if isinstance(node.func, ast.Name):
             if node.func.id in FORBIDDEN_CALLS:
                 self.violations.append(
                     f"{self.filename}:{node.lineno}: bare call to {node.func.id}() is forbidden (Law L2)"
                 )
 
-        # Attribute calls: os.system(...), os.popen(...)
         elif isinstance(node.func, ast.Attribute):
             if isinstance(node.func.value, ast.Name) and node.func.value.id == "os":
                 if node.func.attr in FORBIDDEN_OS_CALLS:
@@ -69,10 +68,25 @@ class HostExecVisitor(ast.NodeVisitor):
 
         self.generic_visit(node)
 
+    def visit_Constant(self, node: ast.Constant) -> None:
+        if (
+            isinstance(node.value, str)
+            and "exec(" in node.value
+            and not self.filename.endswith("test_no_host_exec.py")
+        ):
+            self.violations.append(
+                f"{self.filename}:{node.lineno}: string literal containing exec( is forbidden (Law L2)"
+            )
+        self.generic_visit(node)
 
-def test_no_host_execution_in_src_and_scripts():
+
+def test_no_host_execution_in_src_scripts_and_tests():
     violations = []
-    py_files = list(SRC_DIR.glob("**/*.py")) + list(SCRIPTS_DIR.glob("**/*.py"))
+    py_files = (
+        list(SRC_DIR.glob("**/*.py"))
+        + list(SCRIPTS_DIR.glob("**/*.py"))
+        + list(TESTS_DIR.glob("**/*.py"))
+    )
 
     for py_file in py_files:
         tree = ast.parse(py_file.read_text(encoding="utf-8"), filename=str(py_file))

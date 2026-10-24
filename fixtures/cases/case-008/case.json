@@ -3,7 +3,7 @@
   "title": "Average calculation raises ZeroDivisionError on empty list",
   "bug_class": "empty-input handling in an aggregate",
   "target_symbol": "calculate_average",
-  "expected_exception": "AssertionError",
+  "expected_exception": "ZeroDivisionError",
   "source_files": [
     "stats/agg.py"
   ]

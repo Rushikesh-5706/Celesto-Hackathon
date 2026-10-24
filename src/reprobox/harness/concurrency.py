@@ -1,19 +1,19 @@
-"""Concurrency evaluation harness testing parallel sandbox creation and platform capacity."""
-
 from __future__ import annotations
 
 import json
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from typing import Any
 
 from reprobox.pipeline.orchestrator import run_pipeline
-from reprobox.sandbox.celesto_provider import CelestoProvider
+from reprobox.sandbox.audited_provider import AuditedProvider
+from reprobox.sandbox.celesto_provider import list_cloud_instances
+from reprobox.sandbox.factory import get_default_provider
 from reprobox.sandbox.lifecycle import sweep_orphans
 from reprobox.sandbox.naming import new_sandbox_name
-from reprobox.sandbox.provider import ComputerProvider
 from reprobox.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -21,19 +21,35 @@ logger = logging.getLogger(__name__)
 
 def run_concurrency_harness(
     num_jobs: int = 6,
-    provider: ComputerProvider | None = None,
+    provider: AuditedProvider | None = None,
 ) -> dict[str, Any]:
-    """Execute concurrent sandbox stress test and record platform limits."""
-    prov = provider or CelestoProvider()
+    prov = provider or get_default_provider()
     evidence_file = settings.reports_dir / "evidence" / "concurrency_runs.jsonl"
-    out_json = settings.reports_dir / "concurrency.json"
     evidence_file.parent.mkdir(parents=True, exist_ok=True)
 
     cases = [f"case-{i:03d}" for i in range(1, num_jobs + 1)]
     job_results: list[dict[str, Any]] = []
 
-    logger.info("Starting concurrency test with %d parallel jobs...", num_jobs)
+    logger.info("Starting concurrency test with %d parallel jobs", num_jobs)
     t_start = time.monotonic()
+
+    # Background sampler thread
+    max_active_observed = 0
+    stop_sampler = threading.Event()
+
+    def sampler() -> None:
+        nonlocal max_active_observed
+        while not stop_sampler.is_set():
+            try:
+                active, _ = list_cloud_instances(limit=50)
+                if len(active) > max_active_observed:
+                    max_active_observed = len(active)
+            except Exception as exc:
+                logger.debug("Sampler poll warning: %s", exc)
+            time.sleep(1.5)
+
+    sampler_thread = threading.Thread(target=sampler, daemon=True)
+    sampler_thread.start()
 
     def run_single_job(case_id: str) -> dict[str, Any]:
         sandbox_name = new_sandbox_name()
@@ -42,9 +58,15 @@ def run_concurrency_harness(
 
         job_entry = {
             "sandbox_name": sandbox_name,
+            "computer_id": "unknown",
             "started_at": started_at,
             "case_id": case_id,
             "run_id": run_id,
+            "success": False,
+            "wall_clock_s": 0.0,
+            "cost_usd": 0.0,
+            "llm_rate_limit_count": 0,
+            "error": "",
         }
 
         try:
@@ -54,9 +76,13 @@ def run_concurrency_harness(
                 case_id=case_id,
                 provider=prov,
             )
+            job_entry["computer_id"] = res.computer_id
             job_entry["success"] = res.success
             job_entry["wall_clock_s"] = res.wall_clock_s
-            job_entry["error"] = res.failure_reason
+            job_entry["cost_usd"] = res.cost_usd
+            job_entry["llm_rate_limit_count"] = res.rate_limit_count
+            if not res.success:
+                job_entry["error"] = res.failure_reason or "failed"
         except Exception as exc:
             job_entry["success"] = False
             job_entry["error"] = str(exc)
@@ -68,34 +94,21 @@ def run_concurrency_harness(
         for fut in as_completed(futures):
             res = fut.result()
             job_results.append(res)
-            # Record in raw evidence
             with evidence_file.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(res) + "\n")
 
+    stop_sampler.set()
+    sampler_thread.join(timeout=3.0)
+
     total_wall_clock_s = round(time.monotonic() - t_start, 3)
 
-    # Clean up any leftover sandboxes
+    # Clean up
     sweep_orphans(prov)
 
-    # Compose observations
-    any("429" in str(r.get("error", "")) for r in job_results)
-    notes = (
-        f"Executed {len(job_results)} concurrent job attempts across worker threads. "
-        "The platform trial tier enforces a strict capacity limit of 1 active sandbox at a time, "
-        "returning HTTP 429 with 'The free trial allows one sandbox at a time, including stopped sandboxes'. "
-        "Subsequent requests were refused until the active container was deleted. "
-        f"Total elapsed duration: {total_wall_clock_s:.2f}s."
-    )
-
-    contract_jobs = [
-        {"sandbox_name": r["sandbox_name"], "started_at": r["started_at"]} for r in job_results
-    ]
-
-    result = {
-        "jobs": contract_jobs,
-        "breakage_notes": notes,
+    # Return summary dict
+    return {
+        "job_count": len(job_results),
+        "total_wall_clock_s": total_wall_clock_s,
+        "max_active_observed": max_active_observed,
+        "job_results": job_results,
     }
-
-    out_json.write_text(json.dumps(result, indent=2), encoding="utf-8")
-    logger.info("Wrote concurrency report to %s", out_json)
-    return result

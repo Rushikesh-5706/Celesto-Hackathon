@@ -34,10 +34,10 @@ def run_failure_demo(
     provider: ComputerProvider | None = None,
     case_id: str = "dev-001",
 ) -> None:
-    """Execute dev case with Step 7 fault injection and generate contract evidence."""
+    """Execute dev case with Step 7 fault injection and generate evidence."""
     run_id = f"run-failure-{new_sandbox_name()[4:]}"
     sandbox_name = new_sandbox_name()
-    repo = LedgerRepository()
+    repo = LedgerRepository(settings.harness_database_url)
 
     trace_file = settings.reports_dir / "failure_trace.jsonl"
     policy_file = settings.reports_dir / "failure_policy.json"
@@ -53,8 +53,9 @@ def run_failure_demo(
         repository=repo,
     )
 
-    # Collect events recorded in the ledger for this run
     events = repo.list_events(run_id)
+    run_rec = repo.get_run(run_id)
+    cid = run_rec.computer_id if run_rec else ""
 
     with trace_file.open("w", encoding="utf-8") as f:
         for ev in events:
@@ -62,6 +63,7 @@ def run_failure_demo(
                 "ts": ev.ts.isoformat() if ev.ts else datetime.now(UTC).isoformat(),
                 "run_id": run_id,
                 "sandbox_name": sandbox_name,
+                "computer_id": cid,
                 "event": ev.event,
             }
             if ev.payload:
@@ -73,12 +75,15 @@ def run_failure_demo(
                     record["method"] = ev.payload["method"]
                 if "attempt" in ev.payload:
                     record["attempt"] = ev.payload["attempt"]
+                if "seconds" in ev.payload:
+                    record["seconds"] = ev.payload["seconds"]
+                if "resume_ready_s" in ev.payload:
+                    record["resume_ready_s"] = ev.payload["resume_ready_s"]
 
             f.write(json.dumps(record) + "\n")
 
     logger.info("Wrote failure trace to %s", trace_file)
 
-    # Write failure_policy.json per exact contract
     policy_data = {
         "failed_step": FAULT_STEP,
         "total_steps": TOTAL_STEPS,

@@ -1,50 +1,21 @@
-# Secrets: never commit
 .env
-
-# Python virtual environments
 .venv/
 venv/
 env/
-
-# Python bytecode
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Test and lint caches
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
 .coverage
 htmlcov/
-
-# Build artifacts
 *.egg-info/
 build/
 dist/
-
-# macOS metadata
 .DS_Store
 .DS_Store?
 ._*
-
-# Editor and agent tool folders
 .idea/
 .vscode/
-.gemini/
-.agent/
-.antigravity/
-.claude/
-.cursor/
-
-# Planning and scratch files produced by tooling
-implementation_plan*
-task.md
-walkthrough.md
-GEMINI.md
-AGENTS.md
-CLAUDE.md
-
-# Demo video (large; added manually by Rushi after recording)
-# demo/walkthrough.mp4: NOT ignored; Rushi adds and commits it directly

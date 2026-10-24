@@ -1,32 +1,30 @@
-"""Orphan sandbox sweeping utility."""
-
 from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
-from reprobox.sandbox.celesto_provider import CelestoProvider
+from reprobox.sandbox.audited_provider import AuditedProvider
+from reprobox.sandbox.factory import get_default_provider
 from reprobox.sandbox.lifecycle import sweep_orphans
-from reprobox.sandbox.provider import ComputerProvider
 from reprobox.settings import settings
 
 logger = logging.getLogger(__name__)
 
 
 def run_orphan_sweep(
-    provider: ComputerProvider | None = None,
+    provider: AuditedProvider | None = None,
     log_path: Path | None = None,
+    list_account: bool = False,
 ) -> list[str]:
-    """Execute orphan sweep and write output to log file."""
-    prov = provider or CelestoProvider()
+    prov = provider or get_default_provider()
     target_log = log_path or (settings.reports_dir / "evidence" / "orphan_sweep.log")
     target_log.parent.mkdir(parents=True, exist_ok=True)
 
     ts = datetime.now(UTC).isoformat()
-    lines = [f"=== ORPHAN SWEEP START {ts} ==="]
+    lines = [f"=== ORPHAN SWEEP START {ts} (list_account={list_account}) ==="]
 
-    deleted = sweep_orphans(prov)
+    deleted = sweep_orphans(prov, list_account=list_account)
     lines.append(f"Deleted {len(deleted)} leftover sandboxes: {deleted}")
     lines.append("=== ORPHAN SWEEP END ===")
 

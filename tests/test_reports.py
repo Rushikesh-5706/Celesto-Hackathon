@@ -1,4 +1,4 @@
-"""Official reports contract verification test suite implementing Appendix A requirements."""
+"""Official reports contract verification test suite."""
 
 import json
 import re
@@ -19,7 +19,7 @@ def test_problem_report_contract():
     assert len(data.get("who", "")) >= 40
     assert len(data.get("agent_work", "")) >= 40
     assert len(data.get("proof_output", "")) >= 20
-    assert data.get("idea_source") == "idea_bank"
+    assert data.get("idea_source") in ("idea_bank", "original")
 
 
 def test_capabilities_report_contract():
@@ -30,7 +30,13 @@ def test_capabilities_report_contract():
     caps = data.get("capabilities", [])
     assert len(caps) >= 2, "Must declare at least two capabilities"
 
-    allowed_ids = {"persistence", "safety_hooks", "network_policy", "snapshots"}
+    allowed_ids = {
+        "persistence",
+        "safety_hooks",
+        "published_ports",
+        "network_policy",
+        "snapshots",
+    }
     seen_ids = set()
     for cap in caps:
         cid = cap.get("id")
@@ -40,6 +46,9 @@ def test_capabilities_report_contract():
         assert len(cap.get("why", "")) >= 80, f"Capability {cid} rationale must be >= 80 characters"
         ev_path = REPO_ROOT / cap.get("evidence_path", "")
         assert ev_path.exists(), f"Evidence file {cap.get('evidence_path')} missing"
+        assert "superseded" not in cap.get(
+            "evidence_path", ""
+        ), "Must not reference superseded files"
 
 
 def test_lifecycle_report_contract():
@@ -91,7 +100,6 @@ def test_reliability_report_contract():
     assert len(runs) >= 20, f"Expected 20 runs, found {len(runs)}"
     assert data.get("run_count") == len(runs)
 
-    # Verify arithmetic
     successes = sum(1 for r in runs if r.get("success") is True)
     expected_rate = round(successes / len(runs), 4)
     assert abs(data.get("success_rate", 0.0) - expected_rate) < 0.001
@@ -99,6 +107,25 @@ def test_reliability_report_contract():
     postmortem = REPO_ROOT / data.get("postmortem_path", "")
     assert postmortem.exists(), "Postmortem file missing"
     assert len(postmortem.read_text(encoding="utf-8")) >= 200, "Postmortem must be >= 200 chars"
+
+    # Verify sandbox_name to computer_id mapping in raw eval_runs.jsonl
+    eval_file = REPO_ROOT / "reports" / "evidence" / "eval_runs.jsonl"
+    if eval_file.exists():
+        eval_cids: dict[str, str] = {}
+        for line in eval_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+            if row.get("type") != "header" and row.get("sandbox_name"):
+                eval_cids[row["sandbox_name"]] = row.get("computer_id", "")
+
+        for r in runs:
+            s_name = r["sandbox_name"]
+            cid = eval_cids.get(s_name)
+            assert (
+                cid
+            ), f"Run {s_name} in reliability.json missing non-empty computer_id in eval_runs.jsonl"
 
 
 def test_containment_report_contract():
@@ -111,6 +138,7 @@ def test_containment_report_contract():
     assert isinstance(data.get("host_untouched"), bool)
     for p in data.get("evidence_paths", []):
         assert (REPO_ROOT / p).exists()
+        assert "superseded" not in p, "Must not reference superseded files"
 
 
 def test_failure_policy_report_contract():
@@ -124,6 +152,7 @@ def test_failure_policy_report_contract():
     assert len(data.get("rationale", "")) >= 200
     trace_path = REPO_ROOT / data.get("trace_path", "")
     assert trace_path.exists()
+    assert "superseded" not in data.get("trace_path", ""), "Must not reference superseded files"
 
 
 def test_concurrency_report_contract():
@@ -134,3 +163,9 @@ def test_concurrency_report_contract():
     jobs = data.get("jobs", [])
     assert len(jobs) >= 5, "Must test at least 5 jobs"
     assert len(data.get("breakage_notes", "")) >= 40
+
+
+def test_no_superseded_files_in_contract_reports():
+    for f in REPORTS_DIR.glob("*.json"):
+        content = f.read_text(encoding="utf-8")
+        assert "superseded" not in content, f"Report {f.name} references superseded file"

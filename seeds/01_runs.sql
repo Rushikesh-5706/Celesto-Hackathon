@@ -1,5 +1,3 @@
--- Reprobox ledger schema: idempotent, can be applied multiple times safely.
-
 CREATE TABLE IF NOT EXISTS runs (
     run_id          TEXT        PRIMARY KEY,
     sandbox_name    TEXT        NOT NULL
@@ -14,9 +12,12 @@ CREATE TABLE IF NOT EXISTS runs (
                                 CHECK (execution_target = 'celesto_sandbox'),
     outcome         TEXT        NULL
                                 CHECK (outcome IN ('succeeded', 'failed')),
+    computer_id     TEXT        NULL,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS computer_id TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_runs_sandbox_name ON runs (sandbox_name);
 
@@ -28,7 +29,6 @@ CREATE TABLE IF NOT EXISTS run_events (
     payload JSONB       NOT NULL DEFAULT '{}'
 );
 
--- Seed row: present exactly once so the ledger is non-empty after first boot.
 INSERT INTO runs (run_id, sandbox_name, problem_id, state, execution_target, outcome)
 SELECT
     'run-seeddemo1',

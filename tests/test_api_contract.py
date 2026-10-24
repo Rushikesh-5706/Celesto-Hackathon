@@ -1,5 +1,6 @@
 """FastAPI API contract compliance tests verifying exact endpoint behaviors."""
 
+import time
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from reprobox.api.app import app
 from reprobox.ledger.database import apply_seed_sql, wait_for_db
+from reprobox.settings import settings
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SEED_PATH = REPO_ROOT / "seeds" / "01_runs.sql"
@@ -65,7 +67,6 @@ def test_post_runs_valid_and_idempotent(client: TestClient, db_available: bool):
     assert data1["run_id"] == payload["run_id"]
     assert data1["sandbox_name"] == payload["sandbox_name"]
 
-    # Repeating POST with same run_id must also return 201 without error
     resp2 = client.post("/api/runs", json=payload)
     assert resp2.status_code == 201
     assert resp2.json()["run_id"] == payload["run_id"]
@@ -89,7 +90,7 @@ def test_post_runs_unknown_extra_fields_ignored(client: TestClient, db_available
 
 
 def test_post_runs_validation_rejections(client: TestClient):
-    """Invalid requests must return HTTP 400 (never 422)."""
+    """Invalid requests must return HTTP 400 with detail formatted as a JSON list."""
     base = {
         "run_id": "run-contract-bad",
         "sandbox_name": "sbx-contractbad1",
@@ -100,23 +101,34 @@ def test_post_runs_validation_rejections(client: TestClient):
 
     # Wrong execution target
     bad_target = {**base, "execution_target": "host"}
-    assert client.post("/api/runs", json=bad_target).status_code == 400
+    resp = client.post("/api/runs", json=bad_target)
+    assert resp.status_code == 400
+    assert isinstance(resp.json()["detail"], list)
+    assert any("execution_target" in d.get("field", "") for d in resp.json()["detail"])
 
     # Unknown state
     bad_state = {**base, "state": "unknown_state"}
-    assert client.post("/api/runs", json=bad_state).status_code == 400
+    resp_state = client.post("/api/runs", json=bad_state)
+    assert resp_state.status_code == 400
+    assert isinstance(resp_state.json()["detail"], list)
 
-    # Bad sandbox name (fails regex)
+    # Bad sandbox name
     bad_name = {**base, "sandbox_name": "bad-name"}
-    assert client.post("/api/runs", json=bad_name).status_code == 400
+    resp_name = client.post("/api/runs", json=bad_name)
+    assert resp_name.status_code == 400
+    assert isinstance(resp_name.json()["detail"], list)
 
     # Missing field
     missing_field = {k: v for k, v in base.items() if k != "problem_id"}
-    assert client.post("/api/runs", json=missing_field).status_code == 400
+    resp_missing = client.post("/api/runs", json=missing_field)
+    assert resp_missing.status_code == 400
+    assert isinstance(resp_missing.json()["detail"], list)
 
     # Empty string
     empty_str = {**base, "run_id": ""}
-    assert client.post("/api/runs", json=empty_str).status_code == 400
+    resp_empty = client.post("/api/runs", json=empty_str)
+    assert resp_empty.status_code == 400
+    assert isinstance(resp_empty.json()["detail"], list)
 
     # Malformed JSON
     resp_malformed = client.post(
@@ -125,6 +137,7 @@ def test_post_runs_validation_rejections(client: TestClient):
         headers={"Content-Type": "application/json"},
     )
     assert resp_malformed.status_code == 400
+    assert isinstance(resp_malformed.json()["detail"], list)
 
 
 def test_seed_sql_idempotency(client: TestClient, db_available: bool):
@@ -137,3 +150,56 @@ def test_seed_sql_idempotency(client: TestClient, db_available: bool):
     resp = client.get("/api/runs")
     seed_rows = [r for r in resp.json() if r.get("sandbox_name") == "sbx-seeddemo1"]
     assert len(seed_rows) == 1
+
+
+def test_reports_commands_jsonl_served(client: TestClient):
+    """GET /api/reports/commands.jsonl must return HTTP 200 with JSON content."""
+    resp = client.get("/api/reports/commands.jsonl")
+    assert resp.status_code == 200
+
+
+def test_job_submission_without_api_key_returns_503(client: TestClient, monkeypatch):
+    """POST /api/jobs returns 503 when CELESTO_API_KEY is not configured."""
+    monkeypatch.setattr(settings, "celesto_api_key", "")
+    resp = client.post("/api/jobs", json={"case_id": "case-001"})
+    assert resp.status_code == 503
+    assert resp.json().get("error") == "celesto_unavailable"
+
+
+def test_job_reaches_running_in_worker_thread(client: TestClient, monkeypatch, db_available: bool):
+    """With configured API key and stubbed pipeline, job runs asynchronously."""
+    if not db_available:
+        pytest.skip("PostgreSQL not available")
+
+    monkeypatch.setattr(settings, "celesto_api_key", "mock-key")
+
+    executed_runs: list[str] = []
+
+    def mock_run_pipeline(run_id, sandbox_name, case_id, fault_step=None, **kwargs):
+        from reprobox.ledger.repository import LedgerRepository
+
+        r = LedgerRepository()
+        r.update_state(run_id, "running")
+        executed_runs.append(run_id)
+        time.sleep(0.05)
+        r.update_state(run_id, "succeeded", outcome="succeeded")
+
+    monkeypatch.setattr("reprobox.pipeline.orchestrator.run_pipeline", mock_run_pipeline)
+
+    resp = client.post("/api/jobs", json={"case_id": "case-001"})
+    assert resp.status_code == 202
+    data = resp.json()
+    run_id = data["run_id"]
+
+    for _ in range(20):
+        time.sleep(0.05)
+        job_resp = client.get(f"/api/jobs/{run_id}")
+        if job_resp.status_code == 200 and job_resp.json().get("state") in (
+            "running",
+            "succeeded",
+        ):
+            break
+
+    final_resp = client.get(f"/api/jobs/{run_id}")
+    assert final_resp.status_code == 200
+    assert final_resp.json().get("state") in ("running", "succeeded")

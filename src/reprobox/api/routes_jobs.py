@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -11,6 +13,8 @@ from reprobox.ledger.models import RunRecord
 from reprobox.ledger.repository import LedgerRepository
 from reprobox.sandbox.naming import new_sandbox_name
 from reprobox.settings import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/jobs")
 repo = LedgerRepository()
@@ -35,14 +39,20 @@ def _check_provider_availability() -> str | None:
 def _run_pipeline_background(
     run_id: str, sandbox_name: str, case_id: str, fault_step: int | None
 ) -> None:
-    """Execute pipeline in a detached background thread."""
+    """Execute pipeline in a detached background thread without swallowing errors."""
     try:
         from reprobox.pipeline.orchestrator import run_pipeline
 
         run_pipeline(
             run_id=run_id, sandbox_name=sandbox_name, case_id=case_id, fault_step=fault_step
         )
-    except Exception:
+    except Exception as exc:
+        logger.exception("Background pipeline execution failed for run_id %s: %s", run_id, exc)
+        repo.append_event(
+            run_id,
+            "pipeline_exception",
+            {"error": str(exc), "error_type": type(exc).__name__},
+        )
         repo.update_state(run_id, "failed", outcome="failed")
 
 

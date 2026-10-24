@@ -14,7 +14,7 @@ from reprobox.settings import settings
 
 
 class AuditLogger:
-    """Writes dual audit logs: commands.jsonl (contract) and audit_detail.jsonl (debug)."""
+    """Writes dual audit logs: commands.jsonl and audit_detail.jsonl."""
 
     def __init__(
         self,
@@ -51,7 +51,7 @@ class AuditLogger:
         exit_code: int | None = None,
         duration_s: float | None = None,
     ) -> None:
-        """Log a command attempt according to the five-key contract and detail log."""
+        """Log a command attempt to audit files."""
         if not is_valid_sandbox_name(sandbox_name):
             raise ValueError(f"Invalid sandbox name for audit log: {sandbox_name}")
 

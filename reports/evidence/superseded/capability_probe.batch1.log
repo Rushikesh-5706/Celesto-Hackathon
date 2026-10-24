@@ -1,0 +1,137 @@
+[2026-10-23T07:06:32.935Z] === CELESTO REALITY PROBE === celesto_version=0.1.8 ts=2026-10-23T07:06:32.934Z
+[2026-10-23T07:06:32.935Z] CELESTO_PROVIDER=cloud
+[2026-10-23T07:06:32.935Z] ======================================================================
+[2026-10-23T07:06:32.935Z]   P1: create, run echo, delete :  naming and run return shape
+[2026-10-23T07:06:32.935Z] ======================================================================
+[2026-10-23T07:06:45.304Z]   computer.id=cmp_56043c909c00  boot=11.77s
+[2026-10-23T07:06:45.305Z] RUN> 'echo ready'
+[2026-10-23T07:06:52.133Z]   exit_code=0  elapsed=6.83s
+[2026-10-23T07:06:52.133Z]   stdout: 'ready\n'
+[2026-10-23T07:06:52.133Z]   can_set_name=False
+[2026-10-23T07:06:52.133Z]   name_note: Computer() has no 'name=' parameter. The cloud API assigns its own id (UUID). Our naming.py will use Computer.id as the sandbox_name for the ledger after prepending our own sbx- label externally :  but the SDK's own id is what the cloud uses. We will store computer.id as the sandbox identifier.
+[2026-10-23T07:06:59.382Z]   P1 DONE :  computer deleted
+[2026-10-23T07:06:59.382Z] ======================================================================
+[2026-10-23T07:06:59.382Z]   P2: python availability in guest
+[2026-10-23T07:06:59.382Z] ======================================================================
+[2026-10-23T07:07:09.939Z]   computer.id=cmp_2accc4069e5b
+[2026-10-23T07:07:09.940Z] RUN> 'python3 --version'
+[2026-10-23T07:07:13.361Z]   exit_code=127  elapsed=3.42s
+[2026-10-23T07:07:13.361Z]   stderr: '/bin/sh: 1: python3: not found\n'
+[2026-10-23T07:07:13.361Z] RUN> 'python3 -m pytest --version'
+[2026-10-23T07:07:20.560Z]   exit_code=127  elapsed=7.20s
+[2026-10-23T07:07:20.560Z]   stderr: '/bin/sh: 1: python3: not found\n'
+[2026-10-23T07:07:20.560Z] RUN> 'pip3 --version'
+[2026-10-23T07:07:23.402Z]   exit_code=127  elapsed=2.84s
+[2026-10-23T07:07:23.403Z]   stderr: '/bin/sh: 1: pip3: not found\n'
+[2026-10-23T07:07:23.403Z] RUN> 'patch --version'
+[2026-10-23T07:07:26.054Z]   exit_code=127  elapsed=2.65s
+[2026-10-23T07:07:26.054Z]   stderr: '/bin/sh: 1: patch: not found\n'
+[2026-10-23T07:07:26.054Z] RUN> 'git --version'
+[2026-10-23T07:07:28.628Z]   exit_code=127  elapsed=2.57s
+[2026-10-23T07:07:28.629Z]   stderr: '/bin/sh: 1: git: not found\n'
+[2026-10-23T07:07:28.629Z] RUN> 'uname -a'
+[2026-10-23T07:07:32.461Z]   exit_code=0  elapsed=3.83s
+[2026-10-23T07:07:32.461Z]   stdout: 'Linux celesto 6.12.85 #1 SMP PREEMPT_DYNAMIC Sun Sep 27 13:36:36 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux\n'
+[2026-10-23T07:07:38.098Z]   P2 DONE :  computer deleted
+[2026-10-23T07:07:38.098Z] ======================================================================
+[2026-10-23T07:07:38.098Z]   P3: file transfer mechanism
+[2026-10-23T07:07:38.098Z] ======================================================================
+[2026-10-23T07:07:45.093Z]   computer.id=cmp_d9f816342858
+[2026-10-23T07:07:45.094Z]   computer.files.write available: False
+[2026-10-23T07:07:45.094Z]   computer.upload_file available: False
+[2026-10-23T07:07:45.094Z] RUN> "mkdir -p /workspace/probe_test && echo 'aGVsbG8gcmVwcm9ib3gKbGluZTIK' | base64 -d > /workspace/probe_test/hello.txt && cat /workspace/probe_test/hello.txt"
+[2026-10-23T07:07:50.130Z]   exit_code=0  elapsed=5.04s
+[2026-10-23T07:07:50.131Z]   stdout: 'hello reprobox\nline2\n'
+[2026-10-23T07:07:50.131Z] RUN> 'sha256sum /workspace/probe_test/hello.txt'
+[2026-10-23T07:07:52.913Z]   exit_code=0  elapsed=2.78s
+[2026-10-23T07:07:52.913Z]   stdout: 'e7765a4e08c57905d7d528006a45c06e6a7d5afb6cece8d5cbe7b5260ae9a596  /workspace/probe_test/hello.txt\n'
+[2026-10-23T07:07:52.913Z]   expected sha256: e7765a4e08c57905d7d528006a45c06e6a7d5afb6cece8d5cbe7b5260ae9a596
+[2026-10-23T07:07:52.913Z]   base64_run_works=True  sha256_match=True
+[2026-10-23T07:08:03.548Z]   P3 DONE :  computer deleted
+[2026-10-23T07:08:03.549Z] ======================================================================
+[2026-10-23T07:08:03.549Z]   P4: persistence :  stop/start file survival
+[2026-10-23T07:08:03.549Z] ======================================================================
+[2026-10-23T07:08:11.006Z]   computer.id=cmp_72a0bd9601d0
+[2026-10-23T07:08:11.007Z] RUN> "echo 'persistence_test' > /home/user/persist_marker.txt"
+[2026-10-23T07:08:13.752Z]   exit_code=2  elapsed=2.74s
+[2026-10-23T07:08:13.753Z]   stderr: '/bin/sh: 1: cannot create /home/user/persist_marker.txt: Directory nonexistent\n'
+[2026-10-23T07:08:18.139Z]   stop() returned in 4.39s
+[2026-10-23T07:08:27.207Z]   resume() took 9.07s
+[2026-10-23T07:08:27.207Z] RUN> 'cat /home/user/persist_marker.txt'
+[2026-10-23T07:08:29.753Z]   exit_code=1  elapsed=2.55s
+[2026-10-23T07:08:29.753Z]   stderr: 'cat: /home/user/persist_marker.txt: No such file or directory\n'
+[2026-10-23T07:08:29.754Z]   file_survived=False
+[2026-10-23T07:08:35.486Z]   P4 DONE :  computer deleted
+[2026-10-23T07:08:35.486Z] ======================================================================
+[2026-10-23T07:08:35.486Z]   P5: network policy :  no_internet option
+[2026-10-23T07:08:35.486Z] ======================================================================
+[2026-10-23T07:08:35.487Z]   P5: network_policy kwarg not supported or failed: type object 'NetworkPolicyMode' has no attribute 'CLOSED'
+[2026-10-23T07:08:35.487Z] ======================================================================
+[2026-10-23T07:08:35.487Z]   P6: safety hooks :  Callback on_pre_run with cloud Computer
+[2026-10-23T07:08:35.487Z] ======================================================================
+[2026-10-23T07:08:35.488Z]   Computer() does not accept callbacks= kwarg: _CloudComputer.__init__() got an unexpected keyword argument 'callbacks'
+[2026-10-23T07:08:35.488Z]   hook_applies_to_cloud=False
+[2026-10-23T07:08:35.488Z] ======================================================================
+[2026-10-23T07:08:35.488Z]   P7: snapshots on cloud :  expect not supported
+[2026-10-23T07:08:35.488Z] ======================================================================
+[2026-10-23T07:08:49.816Z]   computer.id=cmp_31be67ed3888
+[2026-10-23T07:08:49.817Z]   snapshot_method_exists=False
+[2026-10-23T07:08:54.222Z]   P7 DONE :  computer deleted
+[2026-10-23T07:08:54.222Z] ======================================================================
+[2026-10-23T07:08:54.222Z]   P8: listing and deletion confirmation
+[2026-10-23T07:08:54.222Z] ======================================================================
+[2026-10-23T07:09:05.483Z]   computer.id=cmp_0c84a4ea08e5
+[2026-10-23T07:09:06.610Z]   visible in list before delete: True
+[2026-10-23T07:09:10.996Z]   deleted
+[2026-10-23T07:09:14.068Z]   visible in list after delete: False
+[2026-10-23T07:09:14.068Z]   P8 DONE :  deletion_confirmed=True
+[2026-10-23T07:09:14.068Z] ======================================================================
+[2026-10-23T07:09:14.068Z]   P9: name collision :  create two computers with same idempotency key
+[2026-10-23T07:09:14.068Z] ======================================================================
+[2026-10-23T07:09:27.350Z]   c1.id=cmp_4d19bdfdb75d
+[2026-10-23T07:09:37.442Z]   P9 error on second create: Cloud API returned HTTP 429. The free trial allows one sandbox at a time, including stopped sandboxes. Reuse your existing sandbox, delete it in the cloud dashboard, or add prepaid credit before creating another. Request ID: 54f3d5201a21d4135364f0c267a3189a.
+[2026-10-23T07:09:40.687Z]   deleted cmp_4d19bdfdb75d
+[2026-10-23T07:09:40.687Z]   P9 DONE
+[2026-10-23T07:09:40.687Z] ======================================================================
+[2026-10-23T07:09:40.687Z]   P10: concurrent sandbox limit (no-top-up trial)
+[2026-10-23T07:09:40.687Z] ======================================================================
+[2026-10-23T07:09:47.673Z]   c1.id=cmp_a0e29e8c966d
+[2026-10-23T07:09:49.823Z]   LIMIT HIT on c2: Cloud API returned HTTP 429. The free trial allows one sandbox at a time, including stopped sandboxes. Reuse your existing sandbox, delete it in the cloud dashboard, or add prepaid credit before creating another. Request ID: 8fa50615316bfe9e85ed5700aa3ab6eb.
+[2026-10-23T07:09:53.701Z]   deleted cmp_a0e29e8c966d
+[2026-10-23T07:09:53.701Z]   P10 DONE
+[2026-10-23T07:09:53.704Z] ======================================================================
+[2026-10-23T07:09:53.704Z]   P11: LLM :  GET /models and tool-call round trip
+[2026-10-23T07:09:53.704Z] ======================================================================
+[2026-10-23T07:09:53.704Z]   LLM_BASE_URL=https://api.groq.com/openai/v1  LLM_MODEL=openai/gpt-oss-120b
+[2026-10-23T07:09:56.537Z]   GET /models status=200
+[2026-10-23T07:09:56.538Z]   models found: ['meta-llama/llama-prompt-guard-2-22m', 'openai/gpt-oss-120b', 'openai/gpt-oss-safeguard-20b', 'openai/gpt-oss-20b', 'whisper-large-v3-turbo', 'allam-2-7b', 'qwen/qwen3.8-27b', 'meta-llama/llama-prompt-guard-2-86m', 'canopylabs/orpheus-v1-english', 'whisper-large-v3']
+[2026-10-23T07:10:01.202Z]   tool-call status=200
+[2026-10-23T07:10:01.203Z]   tool_name=add  args={"a":2,"b":2}
+[2026-10-23T07:10:01.203Z]   P11 DONE
+[2026-10-23T07:10:01.203Z] ======================================================================
+[2026-10-23T07:10:01.203Z]   PROBE SUMMARY
+[2026-10-23T07:10:01.203Z] ======================================================================
+[2026-10-23T07:10:01.203Z]   p1: ok
+[2026-10-23T07:10:01.203Z]   p2: ok
+[2026-10-23T07:10:01.203Z]   p3: ok
+[2026-10-23T07:10:01.203Z]   p4: ok
+[2026-10-23T07:10:01.203Z]   p5: ok
+[2026-10-23T07:10:01.203Z]   p6: ok
+[2026-10-23T07:10:01.203Z]   p7: ok
+[2026-10-23T07:10:01.203Z]   p8: ok
+[2026-10-23T07:10:01.203Z]   p9: ok
+[2026-10-23T07:10:01.203Z]   p10: ok
+[2026-10-23T07:10:01.203Z]   p11: ok
+[2026-10-23T07:10:01.203Z] ======================================================================
+[2026-10-23T07:10:01.203Z]   CAPABILITY DECISIONS
+[2026-10-23T07:10:01.203Z] ======================================================================
+[2026-10-23T07:10:01.203Z]   persistence:    NOT CLAIMED  (p4.file_survived=False)
+[2026-10-23T07:10:01.204Z]   safety_hooks:   CLAIMED  (guard.py intercepts all commands)
+[2026-10-23T07:10:01.205Z]   network_policy: NOT CLAIMED  (p5.supported=False)
+[2026-10-23T07:10:01.205Z]   snapshots:      NOT CLAIMED  (cloud provider has no snapshot API)
+[2026-10-23T07:10:01.205Z] ======================================================================
+[2026-10-23T07:10:01.205Z]   BLOCKING CHECK
+[2026-10-23T07:10:01.205Z] ======================================================================
+[2026-10-23T07:10:01.205Z]   python3 in guest: MISSING
+[2026-10-23T07:10:01.205Z]   pytest in guest:  needs pip install
+[2026-10-23T07:10:01.205Z] === PROBE COMPLETE ===

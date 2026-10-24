@@ -10,29 +10,49 @@ from pathlib import Path
 
 import psycopg
 from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 
 from reprobox.settings import settings
 
 logger = logging.getLogger(__name__)
 
+_pool: ConnectionPool | None = None
+
+
+def get_pool(database_url: str | None = None) -> ConnectionPool:
+    global _pool
+    if _pool is None or _pool.closed:
+        url = database_url or settings.database_url
+        _pool = ConnectionPool(
+            conninfo=url,
+            min_size=1,
+            max_size=10,
+            kwargs={"row_factory": dict_row},
+            open=True,
+        )
+    return _pool
+
+
+def close_pool() -> None:
+    global _pool
+    if _pool is not None and not _pool.closed:
+        _pool.close()
+        _pool = None
+
 
 @contextmanager
 def get_connection(database_url: str | None = None) -> Generator[psycopg.Connection, None, None]:
-    """Provide a transactional database connection."""
-    url = database_url or settings.database_url
-    conn = psycopg.connect(url, row_factory=dict_row)
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+    pool = get_pool(database_url)
+    with pool.connection() as conn:
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
 
 
 def wait_for_db(max_wait_s: int = 60, database_url: str | None = None) -> bool:
-    """Poll the database until reachable or timeout expires."""
     url = database_url or settings.database_url
     start = time.monotonic()
     delay = 0.5
@@ -49,7 +69,6 @@ def wait_for_db(max_wait_s: int = 60, database_url: str | None = None) -> bool:
 
 
 def apply_seed_sql(seed_path: Path, database_url: str | None = None) -> None:
-    """Apply the schema and seed SQL file idempotently."""
     if not seed_path.exists():
         raise FileNotFoundError(f"Seed SQL file not found: {seed_path}")
 

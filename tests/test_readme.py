@@ -6,10 +6,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 README_FILE = REPO_ROOT / "README.md"
 
-REQUIRED_PHRASES = [
-    "Why Celesto and not a Docker container or E2B",
-    "What would break at 1,000 users",
-    "AI coding assistants are allowed. Disclose which ones you used in your README.",
+REQUIRED_HEADINGS = [
+    "Problem statement",
+    "How I used Celesto",
+    "Eval report",
+    "Containment test",
+    "State and failure design",
+    "Setup",
 ]
 
 BANNED_WORDS = [
@@ -39,12 +42,14 @@ BANNED_WORDS = [
 ]
 
 
-def test_readme_exists_and_contains_required_phrases():
+def test_readme_exists_and_contains_required_headings():
     assert README_FILE.exists(), "README.md is missing"
     content = README_FILE.read_text(encoding="utf-8")
 
-    for phrase in REQUIRED_PHRASES:
-        assert phrase.lower() in content.lower(), f"Missing required phrase in README: '{phrase}'"
+    for heading in REQUIRED_HEADINGS:
+        assert (
+            heading.lower() in content.lower()
+        ), f"Missing required heading in README: '{heading}'"
 
 
 def test_readme_no_secrets():
@@ -53,9 +58,15 @@ def test_readme_no_secrets():
     assert "gsk_" not in content, "README must not leak Groq API keys"
 
 
-def test_readme_no_banned_words():
+def test_readme_no_banned_words_and_dashes():
     content = README_FILE.read_text(encoding="utf-8")
-    # Exclude code fences or markdown links if any
+
+    assert "\u2013" not in content, "README must not contain en dashes"
+    assert "\u2014" not in content, "README must not contain em dashes"
+
+    emoji_pattern = re.compile(r"[\U00010000-\U0010ffff]", flags=re.UNICODE)
+    assert not emoji_pattern.findall(content), "README must not contain emojis"
+
     words = re.findall(r"\b[a-zA-Z-']+\b", content.lower())
 
     violations = []

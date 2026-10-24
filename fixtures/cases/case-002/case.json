@@ -3,7 +3,7 @@
   "title": "Date comparator crashes on mixing aware and naive datetimes",
   "bug_class": "naive versus timezone-aware datetime comparison",
   "target_symbol": "is_expired",
-  "expected_exception": "AssertionError",
+  "expected_exception": "TypeError",
   "source_files": [
     "expiry/checker.py"
   ]

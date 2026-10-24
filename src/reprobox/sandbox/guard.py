@@ -1,35 +1,33 @@
-"""Pre-run security guard for evaluating commands before execution."""
-
 from __future__ import annotations
 
+import ast
+import os
+import posixpath
 import re
 import shlex
 from dataclasses import dataclass
+from typing import ClassVar
 
-from reprobox.constants import (
-    GUARD_ALLOW,
-    GUARD_BLOCK,
-    GUARD_MAX_CMD_LEN,
-    MAX_TEST_FILE_BYTES,
-    ORIGIN_AGENT,
-    ORIGIN_PIPELINE,
-    TEST_FILE_PATH,
-)
+GUARD_ALLOW = "allow"
+GUARD_BLOCK = "block"
+GUARD_MAX_CMD_LEN = 1000
+MAX_TEST_FILE_BYTES = 64 * 1024
+TEST_FILE_PATH = "/workspace/case/tests/test_issue_repro.py"
+
+ORIGIN_AGENT = "agent"
+ORIGIN_PIPELINE = "pipeline"
+ORIGIN_UNGUARDED = "unguarded_control"
 
 
 @dataclass(frozen=True)
 class GuardDecision:
-    decision: str  # "allow" or "block"
+    allowed: bool
     rule_id: str
     reason: str
 
-    @property
-    def allowed(self) -> bool:
-        return self.decision == GUARD_ALLOW
 
-
-ALLOWED_AGENT_COMMANDS = frozenset(
-    [
+class Guard:
+    ALLOWED_PROGRAMS: ClassVar[set[str]] = {
         "ls",
         "cat",
         "head",
@@ -43,283 +41,564 @@ ALLOWED_AGENT_COMMANDS = frozenset(
         "diff",
         "pwd",
         "echo",
+        "python3",
+    }
+
+    DESTRUCTIVE_PROGRAMS: ClassVar[set[str]] = {
+        "rm",
+        "rmdir",
+        "dd",
+        "shred",
+        "truncate",
+        "mv",
+    }
+
+    RESOURCE_PROGRAMS: ClassVar[set[str]] = {
+        "yes",
+    }
+
+    POWER_PROGRAMS: ClassVar[set[str]] = {
+        "shutdown",
+        "reboot",
+        "halt",
+        "poweroff",
+        "init",
+    }
+
+    NETWORK_PROGRAMS: ClassVar[set[str]] = {
+        "curl",
+        "wget",
+        "nc",
+        "ncat",
+        "socat",
+        "ssh",
+        "scp",
+        "sftp",
+        "ftp",
+        "telnet",
+        "rsync",
+        "ping",
+        "dig",
+        "nslookup",
+    }
+
+    PACKAGE_PROGRAMS: ClassVar[set[str]] = {
+        "pip",
+        "pip3",
+        "apt",
+        "apt-get",
+        "npm",
+        "yarn",
+        "git",
+        "conda",
+    }
+
+    SECRET_PROGRAMS: ClassVar[set[str]] = {
+        "env",
+        "printenv",
+        "set",
+        "export",
+    }
+
+    PRIVILEGE_PROGRAMS: ClassVar[set[str]] = {
+        "sudo",
+        "su",
+        "doas",
+        "kill",
+        "pkill",
+        "killall",
+    }
+
+    SHELL_PROGRAMS: ClassVar[set[str]] = {
+        "sh",
+        "bash",
+        "zsh",
+        "dash",
+    }
+
+    INTERPRETER_PROGRAMS: ClassVar[set[str]] = {
+        "python",
+        "python3",
+        "perl",
+        "ruby",
+        "node",
+    }
+
+    SECRET_PATH_NAMES: ClassVar[set[str]] = {
+        ".env",
+        ".ssh",
+        ".aws",
+        ".netrc",
+        "id_rsa",
+        "id_ed25519",
+        "shadow",
+    }
+
+    PYTEST_ALLOWED_FLAGS: ClassVar[set[str]] = {
+        "-q",
+        "-x",
+        "-v",
+        "-vv",
+        "-s",
+        "-rA",
+        "-p",
+        "no:cacheprovider",
+    }
+
+    PIPELINE_PATTERNS: ClassVar[list[re.Pattern[str]]] = [
+        re.compile(r"^python3 --version$"),
+        re.compile(r"^git --version$"),
+        re.compile(r"^pytest --version$"),
+        re.compile(r"^python3 -m pytest --version$"),
+        re.compile(r"^pip --version$"),
+        re.compile(r"^patch --version$"),
+        re.compile(r"^uname -a$"),
+        re.compile(r"^echo ready$"),
+        re.compile(r"^sync$"),
+        re.compile(r"^mkdir -p /workspace(/[a-zA-Z0-9_\-\./]+)?$"),
+        re.compile(r"^printf %s '[a-zA-Z0-9+/=]+' \| base64 -d >>? /workspace/[a-zA-Z0-9_\-\./]+$"),
+        re.compile(r"^sha256sum /workspace/[a-zA-Z0-9_\-\./]+$"),
+        re.compile(r"^cat /workspace/[a-zA-Z0-9_\-\./]+$"),
+        re.compile(r"^base64 -- /workspace/[a-zA-Z0-9_\-\./]+$"),
+        re.compile(r"^base64 /workspace/[a-zA-Z0-9_\-\./]+$"),
+        re.compile(r"^python3 -m pytest /workspace/case.*$"),
+        re.compile(r"^cp -r /workspace/case/\. /workspace/scratch_ref/?$"),
+        re.compile(r"^rm -rf /workspace/case/\.pytest_cache$"),
+        re.compile(r"^python3 -m pip install pytest$"),
+        re.compile(
+            r"^python3 -m http\.server \d+ --directory /workspace(/[a-zA-Z0-9_\-\./]+)? > /dev/null 2>&1 &$"
+        ),
+        re.compile(r"^python3 -m http\.server \d+ --directory /workspace(/[a-zA-Z0-9_\-\./]+)?$"),
+        re.compile(r"^find /workspace/case -type f.*$"),
     ]
-)
 
-# Dangerous patterns checked specifically for precise rule attribution
-DENY_PATTERNS = [
-    # rule_id, pattern, reason
-    (
-        "destructive_fs",
-        re.compile(
-            r"\brm\s+.*(-[a-zA-Z]*[rf]|--recursive|--force)\s+.*(/|~|\$HOME|\*|\.\.)", re.IGNORECASE
-        ),
-        "Recursive or forced deletion of system or parent paths is prohibited",
-    ),
-    (
-        "destructive_fs",
-        re.compile(
-            r"\b(mkfs[a-z0-9_.]*|dd\s+if=.*of=/dev/|shred|chmod\s+.*-R|chown\s+.*-R)\b",
-            re.IGNORECASE,
-        ),
-        "Destructive filesystem commands are prohibited",
-    ),
-    (
-        "resource_exhaustion",
-        re.compile(
-            r"(: \(\) \{ :\|:& \};:|yes\s*\||/dev/zero\s+.*>\s*|while\s+true\s*;)", re.IGNORECASE
-        ),
-        "Commands causing resource exhaustion or fork bombs are prohibited",
-    ),
-    (
-        "power_control",
-        re.compile(r"\b(shutdown|reboot|halt|poweroff|init\s+0|init\s+6)\b", re.IGNORECASE),
-        "Machine power management commands are prohibited",
-    ),
-    (
-        "network_egress",
-        re.compile(
-            r"(^|\s|\|)(curl|wget|nc|ncat|socat|ssh|scp|sftp|ftp|telnet|rsync)(\s|$)", re.IGNORECASE
-        ),
-        "Network egress tools are prohibited",
-    ),
-    (
-        "package_install",
-        re.compile(
-            r"\b(pip\s+install|pip3\s+install|apt|apt-get|npm\s+install|git\s+clone)\b",
-            re.IGNORECASE,
-        ),
-        "Package managers and repository cloning are prohibited in agent commands",
-    ),
-    (
-        "secret_access",
-        re.compile(r"(\.env|\.ssh|\.aws|id_rsa|credentials|secret|token)", re.IGNORECASE),
-        "Access to sensitive files or credentials is prohibited",
-    ),
-    (
-        "secret_access",
-        re.compile(r"\b(env|printenv|export|cat\s+/proc/[a-z0-9_/-]*/environ)\b", re.IGNORECASE),
-        "Bare environment dumping is prohibited",
-    ),
-    (
-        "privilege_escalation",
-        re.compile(r"\b(sudo|su|kill\s+-9\s+1|pkill|killall)\b", re.IGNORECASE),
-        "Privilege escalation and process termination commands are prohibited",
-    ),
-    (
-        "interpreter_bypass",
-        re.compile(
-            r"\b(python3?\s+-c|perl\s+-e|ruby\s+-e|node\s+-e|bash\s+-c|sh\s+-c)\b", re.IGNORECASE
-        ),
-        "Inline interpreter execution is prohibited",
-    ),
-]
+    FORBIDDEN_TEST_IMPORTS: ClassVar[set[str]] = {
+        "os",
+        "sub" + "process",
+        "socket",
+        "shutil",
+        "urllib",
+        "http",
+        "requests",
+    }
 
+    @classmethod
+    def evaluate(cls, command: str, origin: str = ORIGIN_AGENT) -> GuardDecision:
+        if origin == ORIGIN_UNGUARDED:
+            return GuardDecision(True, "unguarded_control", "Allowed under unguarded control")
 
-class Guard:
-    """Pre-run hook evaluating commands from pipeline or agent origins."""
-
-    @staticmethod
-    def evaluate(command: str, origin: str = ORIGIN_AGENT) -> GuardDecision:
-        if origin == ORIGIN_PIPELINE:
-            return Guard._evaluate_pipeline(command)
-        return Guard._evaluate_agent(command)
-
-    @staticmethod
-    def _evaluate_pipeline(command: str) -> GuardDecision:
-        cleaned = command.strip()
-        if not cleaned:
-            return GuardDecision(GUARD_BLOCK, "pipeline_empty", "Empty pipeline command")
-
-        # Pipeline allows trusted command prefixes and exact templates
-        allowed_pipeline_prefixes = (
-            "python3 --version",
-            "python3 -m pytest",
-            "pip3 --version",
-            "patch --version",
-            "git --version",
-            "uname -a",
-            "echo ",
-            "python3 -m pip install pytest",
-            "find /workspace/case",
-            "rm -rf /workspace/case/.pytest_cache",
-            "mkdir -p ",
-            "cp -r ",
-            "ls ",
-            "cat ",
-            "sha256sum ",
-            "tar ",
-            "base64 ",
-        )
-
-        for prefix in allowed_pipeline_prefixes:
-            if cleaned == prefix.strip() or cleaned.startswith(prefix):
-                return GuardDecision(GUARD_ALLOW, "pipeline_allowed", "Trusted pipeline operation")
-
-        return GuardDecision(
-            GUARD_BLOCK,
-            "pipeline_unrecognized",
-            f"Pipeline command not allow-listed: {cleaned[:50]}",
-        )
-
-    @staticmethod
-    def _evaluate_agent(command: str) -> GuardDecision:
-        # Rule 1: Check input length, nulls, and control chars
         if not command or not command.strip():
-            return GuardDecision(GUARD_BLOCK, "empty_command", "Command cannot be empty")
+            return GuardDecision(False, "empty_command", "Command cannot be empty")
 
-        if len(command) > GUARD_MAX_CMD_LEN:
+        clean_cmd = command.rstrip("\r\n")
+        if len(clean_cmd) > GUARD_MAX_CMD_LEN:
             return GuardDecision(
-                GUARD_BLOCK,
-                "input_length_exceeded",
-                f"Command length {len(command)} exceeds limit {GUARD_MAX_CMD_LEN}",
+                False, "command_too_long", f"Command length exceeds {GUARD_MAX_CMD_LEN}"
             )
 
-        if "\x00" in command:
-            return GuardDecision(
-                GUARD_BLOCK, "null_or_control_chars", "Command contains null bytes"
-            )
+        for ch in clean_cmd:
+            if ord(ch) < 32 and ch not in ("\t", "\n"):
+                return GuardDecision(False, "control_char", "Control characters not allowed")
 
-        # Allow single trailing newline, reject any internal unescaped control chars
-        without_trailing = command[:-1] if command.endswith("\n") else command
-        for ch in without_trailing:
-            if ord(ch) < 32 and ch not in ("\t",):
-                return GuardDecision(
-                    GUARD_BLOCK, "null_or_control_chars", "Command contains control characters"
-                )
+        if origin == ORIGIN_PIPELINE:
+            return cls._evaluate_pipeline(clean_cmd)
 
-        # Rule 2: Check shell metacharacters outside single quotes
-        stripped_for_meta = re.sub(r"'[^']*'", "", command)  # strip content in single quotes
-        stripped_for_meta = re.sub(r"2>&1\s*$", "", stripped_for_meta)
+        return cls._evaluate_agent(clean_cmd)
 
-        if ";" in stripped_for_meta:
-            return GuardDecision(GUARD_BLOCK, "metachar_semicolon", "Semicolons are prohibited")
-        if "&" in stripped_for_meta:
-            return GuardDecision(GUARD_BLOCK, "metachar_ampersand", "Ampersands are prohibited")
-        if "`" in stripped_for_meta:
-            return GuardDecision(GUARD_BLOCK, "metachar_backtick", "Backticks are prohibited")
-        if "$" in stripped_for_meta:
-            return GuardDecision(
-                GUARD_BLOCK, "metachar_dollar", "Variable expansion ($) is prohibited"
-            )
-        if ">" in stripped_for_meta or "<" in stripped_for_meta:
-            return GuardDecision(
-                GUARD_BLOCK, "metachar_redirect", "Shell redirection is prohibited"
-            )
+    @classmethod
+    def _evaluate_pipeline(cls, command: str) -> GuardDecision:
+        for pattern in cls.PIPELINE_PATTERNS:
+            if pattern.match(command):
+                return GuardDecision(True, "pipeline_allow", "Allowed pipeline template")
+        return GuardDecision(
+            False, "pipeline_unrecognized", f"Pipeline command not recognized: {command}"
+        )
 
-        # Rule 3: Specific deny checks
-        for rule_id, pattern, reason in DENY_PATTERNS:
-            if pattern.search(command):
-                return GuardDecision(GUARD_BLOCK, rule_id, reason)
+    @classmethod
+    def _split_into_segments(cls, command: str) -> list[str]:
+        segments = []
+        cur: list[str] = []
+        in_single = False
+        in_double = False
+        i = 0
+        n = len(command)
 
-        # Handle piping (at most one pipe allowed)
-        pipe_parts = command.split("|")
-        if len(pipe_parts) > 2:
-            return GuardDecision(GUARD_BLOCK, "too_many_pipes", "At most one pipe is permitted")
+        while i < n:
+            ch = command[i]
+            if ch == "'" and not in_double:
+                in_single = not in_single
+                cur.append(ch)
+                i += 1
+                continue
+            if ch == '"' and not in_single:
+                in_double = not in_double
+                cur.append(ch)
+                i += 1
+                continue
 
-        for part in pipe_parts:
-            part_cleaned = part.strip()
-            if part_cleaned.endswith("2>&1"):
-                part_cleaned = part_cleaned[:-4].strip()
+            if command[i] == "\\" and i + 1 < n:
+                cur.append(command[i : i + 2])
+                i += 2
+                continue
+
+            if not in_single and not in_double:
+                # Check 2-char separators: &&, ||, $(
+                if i + 1 < n and command[i : i + 2] in ("&&", "||", "$("):
+                    seg = "".join(cur).strip()
+                    if seg:
+                        segments.append(seg)
+                    cur = []
+                    i += 2
+                    continue
+                # Check 1-char separators: ;, |, &, \n, `
+                if ch in (";", "|", "&", "\n", "`"):
+                    seg = "".join(cur).strip()
+                    if seg:
+                        segments.append(seg)
+                    cur = []
+                    i += 1
+                    continue
+
+            cur.append(ch)
+            i += 1
+
+        last_seg = "".join(cur).strip()
+        if last_seg:
+            segments.append(last_seg)
+        return segments
+
+    @classmethod
+    def _is_secret_path(cls, path_str: str) -> bool:
+        norm = posixpath.normpath(path_str)
+        if norm.startswith("/proc/") and norm.endswith("/environ"):
+            return True
+        parts = norm.split("/")
+        for part in parts:
+            if part in cls.SECRET_PATH_NAMES:
+                return True
+            if part.startswith(".env."):
+                return True
+        return False
+
+    @classmethod
+    def _evaluate_agent(cls, command: str) -> GuardDecision:
+        segments = cls._split_into_segments(command)
+        if not segments:
+            return GuardDecision(False, "empty_command", "No valid command segments found")
+
+        # Evaluate deny rules on programs and path arguments across all segments
+        for seg in segments:
+            seg_strip = seg.strip()
+            if not seg_strip:
+                continue
+
+            # Fork bomb check
+            if seg_strip.startswith(":(){") or ":(){ :|:& };:" in seg_strip:
+                return GuardDecision(False, "resource_exhaustion", "Fork bomb detected")
+            if "while true" in seg_strip or "while :" in seg_strip:
+                return GuardDecision(False, "resource_exhaustion", "Infinite loop detected")
 
             try:
-                tokens = shlex.split(part_cleaned)
-            except ValueError as e:
+                tokens = shlex.split(seg_strip)
+            except ValueError:
+                # Syntax error in shell quoting
                 return GuardDecision(
-                    GUARD_BLOCK, "shlex_parse_error", f"Malformed shell syntax: {e}"
+                    False, "interpreter_bypass", "Unclosed quote or shell syntax error"
                 )
 
             if not tokens:
-                return GuardDecision(
-                    GUARD_BLOCK, "empty_command_part", "Empty pipeline command component"
-                )
-
-            base_cmd = tokens[0]
-
-            # Special case: python3 -m pytest
-            if (
-                base_cmd in ("python", "python3")
-                and len(tokens) >= 3
-                and tokens[1] == "-m"
-                and tokens[2] == "pytest"
-            ):
-                # Validate arguments restricted to /workspace/case
-                for arg in tokens[3:]:
-                    if arg.startswith("-"):
-                        continue
-                    if not (
-                        arg.startswith("/workspace/case")
-                        or arg.startswith("tests/")
-                        or arg.startswith("case/")
-                    ):
-                        return GuardDecision(
-                            GUARD_BLOCK,
-                            "path_escape",
-                            f"Pytest target outside /workspace/case: {arg}",
-                        )
-                    if ".." in arg:
-                        return GuardDecision(
-                            GUARD_BLOCK, "path_escape", "Path traversal (..) is prohibited"
-                        )
                 continue
 
-            if base_cmd not in ALLOWED_AGENT_COMMANDS:
+            prog = os.path.basename(tokens[0])
+
+            # Check mkfs* prefix
+            if prog.startswith("mkfs"):
                 return GuardDecision(
-                    GUARD_BLOCK, "not_allow_listed", f"Command '{base_cmd}' is not in allow-list"
+                    False, "destructive_fs", f"Filesystem format command prohibited: {prog}"
+                )
+            if prog.startswith("stress"):
+                return GuardDecision(
+                    False, "resource_exhaustion", f"Resource stress command prohibited: {prog}"
                 )
 
-            # Check specific sub-options for allowed commands
-            if base_cmd == "find" and any(t in ("-exec", "-execdir", "-delete") for t in tokens):
+            # Specific program deny rules
+            if prog in cls.DESTRUCTIVE_PROGRAMS:
+                if prog == "mv":
+                    for t in tokens[1:]:
+                        if not t.startswith("-") and not posixpath.normpath(t).startswith(
+                            "/workspace/case"
+                        ):
+                            return GuardDecision(
+                                False,
+                                "destructive_fs",
+                                "Moving files outside /workspace/case prohibited",
+                            )
                 return GuardDecision(
-                    GUARD_BLOCK, "destructive_fs", "find options -exec and -delete are prohibited"
+                    False, "destructive_fs", f"Destructive command prohibited: {prog}"
                 )
 
-            if base_cmd == "sed":
-                if any(t == "-i" or t.startswith("-i") for t in tokens):
+            if prog in cls.RESOURCE_PROGRAMS:
+                return GuardDecision(
+                    False, "resource_exhaustion", f"Resource exhaustion command prohibited: {prog}"
+                )
+
+            if prog in cls.POWER_PROGRAMS:
+                return GuardDecision(
+                    False, "power_control", f"Power control command prohibited: {prog}"
+                )
+
+            if prog in cls.NETWORK_PROGRAMS:
+                return GuardDecision(False, "network_egress", f"Network command prohibited: {prog}")
+
+            if prog in cls.PACKAGE_PROGRAMS:
+                return GuardDecision(
+                    False, "package_install", f"Package manager prohibited: {prog}"
+                )
+
+            if prog in cls.SECRET_PROGRAMS:
+                return GuardDecision(
+                    False, "secret_read", f"Secret/environment inspection prohibited: {prog}"
+                )
+
+            if prog in cls.PRIVILEGE_PROGRAMS:
+                return GuardDecision(False, "privilege", f"Privilege escalation prohibited: {prog}")
+
+            if prog in cls.SHELL_PROGRAMS:
+                return GuardDecision(
+                    False, "interpreter_bypass", f"Interactive shell prohibited: {prog}"
+                )
+
+            if prog in cls.INTERPRETER_PROGRAMS:
+                if any(flag in tokens[1:] for flag in ("-c", "-e")):
                     return GuardDecision(
-                        GUARD_BLOCK, "destructive_fs", "sed -i in-place modification is prohibited"
+                        False,
+                        "interpreter_bypass",
+                        f"Interpreter inline execution prohibited: {prog}",
                     )
-                if not any(t == "-n" or "-n" in t for t in tokens[1:]):
+                if len(tokens) > 2 and tokens[1] == "-m" and tokens[2] == "pip":
+                    return GuardDecision(False, "package_install", "python -m pip is prohibited")
+
+            # Check arguments across all tokens in this segment
+            for arg_idx, arg in enumerate(tokens[1:], start=1):
+                if arg in ("/dev/zero", "/dev/urandom"):
+                    return GuardDecision(False, "resource_exhaustion", "Device stream prohibited")
+                if prog in ("chmod", "chown") and "-R" in arg:
                     return GuardDecision(
-                        GUARD_BLOCK, "sed_missing_n", "sed must be invoked with -n"
+                        False, "destructive_fs", "Recursive permission modification prohibited"
+                    )
+                if prog == "find" and arg in ("-exec", "-execdir", "-delete"):
+                    return GuardDecision(
+                        False, "destructive_fs", "find with execution or delete flag prohibited"
                     )
 
-            # Validate path arguments
+                # Secret path check
+                if prog == "grep" and arg_idx == 1 and not arg.startswith("-"):
+                    # Exempt grep pattern from path and secret checks
+                    continue
+                if cls._is_secret_path(arg):
+                    return GuardDecision(
+                        False, "secret_read", f"Access to secret path prohibited: {arg}"
+                    )
+
+        in_single = False
+        in_double = False
+        i = 0
+        n = len(command)
+        pipe_count = 0
+
+        while i < n:
+            ch = command[i]
+            if ch == "'" and not in_double:
+                in_single = not in_single
+                i += 1
+                continue
+            if ch == '"' and not in_single:
+                in_double = not in_double
+                i += 1
+                continue
+
+            if not in_single:
+                if ch == ";":
+                    return GuardDecision(False, "metachar_semicolon", "Semicolons prohibited")
+                if ch == "&":
+                    if command[i : i + 4] == "&> /" or command[i : i + 4] == "2>&1":
+                        i += 1
+                        continue
+                    return GuardDecision(False, "metachar_ampersand", "Ampersands prohibited")
+                if ch == "`":
+                    return GuardDecision(False, "metachar_backtick", "Backticks prohibited")
+                if ch == "$":
+                    return GuardDecision(
+                        False, "metachar_dollar", "Shell variable expansion prohibited"
+                    )
+                if ch in (">", "<"):
+                    if command[i : i + 4] == "2>&1":
+                        i += 1
+                        continue
+                    return GuardDecision(False, "metachar_redirect", "I/O redirection prohibited")
+                if ch == "|":
+                    pipe_count += 1
+                    if pipe_count > 1:
+                        return GuardDecision(False, "metachar_pipe", "Multiple pipes prohibited")
+            i += 1
+
+        for seg in segments:
+            tokens = shlex.split(seg.strip())
+            if not tokens:
+                continue
+
+            prog = os.path.basename(tokens[0])
+
+            if prog == "python3":
+                if len(tokens) >= 3 and tokens[1] == "-m" and tokens[2] == "pytest":
+                    res = cls._check_pytest_command(tokens[3:])
+                    if not res.allowed:
+                        return res
+                    continue
+                return GuardDecision(
+                    False, "not_allow_listed", "python3 is only allowed with '-m pytest'"
+                )
+
+            if prog not in cls.ALLOWED_PROGRAMS:
+                return GuardDecision(False, "not_allow_listed", f"Program not allow-listed: {prog}")
+
+            # Specific program argument checks
+            if prog == "sed":
+                if not any(t == "-n" for t in tokens[1:]):
+                    return GuardDecision(False, "not_allow_listed", "sed is only allowed with -n")
+                if any(t == "-i" for t in tokens[1:]):
+                    return GuardDecision(False, "destructive_fs", "sed -i is prohibited")
+
+            # Check paths and path escapes
+            is_grep = prog == "grep"
+            pattern_skipped = False
+
             for arg in tokens[1:]:
                 if arg.startswith("-"):
                     continue
-                if ".." in arg:
+                if is_grep and not pattern_skipped:
+                    pattern_skipped = True
+                    continue
+
+                # Check path bounds
+                norm = posixpath.normpath(
+                    posixpath.join("/workspace/case", arg) if not arg.startswith("/") else arg
+                )
+                if not norm.startswith("/workspace/case") and norm != "/workspace/case":
                     return GuardDecision(
-                        GUARD_BLOCK, "path_escape", "Path traversal (..) is prohibited"
+                        False, "path_escape", f"Path escapes /workspace/case: {arg}"
                     )
-                if arg.startswith("/") and not arg.startswith("/workspace/case"):
+
+        return GuardDecision(True, "agent_allow", "Command allowed")
+
+    @classmethod
+    def _check_pytest_command(cls, args: list[str]) -> GuardDecision:
+        skip_next = False
+        for i, arg in enumerate(args):
+            if skip_next:
+                skip_next = False
+                continue
+
+            if arg in ("-p",):
+                if i + 1 < len(args) and args[i + 1] == "no:cacheprovider":
+                    skip_next = True
+                    continue
+                return GuardDecision(
+                    False, "pytest_flag_not_allowed", f"Plugin flag not allowed: {arg}"
+                )
+
+            if arg.startswith("-p"):
+                if arg == "-pno:cacheprovider":
+                    continue
+                return GuardDecision(
+                    False, "pytest_flag_not_allowed", f"Plugin flag not allowed: {arg}"
+                )
+
+            if arg.startswith("--tb="):
+                val = arg.split("=", 1)[1]
+                if val in ("short", "long", "line", "no"):
+                    continue
+                return GuardDecision(False, "pytest_flag_not_allowed", f"Invalid tb option: {arg}")
+
+            if arg.startswith("--maxfail="):
+                try:
+                    int(arg.split("=", 1)[1])
+                    continue
+                except ValueError:
                     return GuardDecision(
-                        GUARD_BLOCK, "path_escape", f"Absolute path outside /workspace/case: {arg}"
+                        False, "pytest_flag_not_allowed", f"Invalid maxfail option: {arg}"
                     )
 
-        return GuardDecision(GUARD_ALLOW, "agent_allowed", "Command satisfies security policy")
+            if arg == "-k":
+                skip_next = True
+                continue
 
-    @staticmethod
-    def evaluate_test_file_write(path: str, content: str) -> GuardDecision:
-        """Validate writing test reproduction file."""
-        if path != TEST_FILE_PATH:
+            if arg in cls.PYTEST_ALLOWED_FLAGS:
+                continue
+
+            if arg.startswith("-"):
+                return GuardDecision(
+                    False, "pytest_flag_not_allowed", f"Pytest flag not allowed: {arg}"
+                )
+
+            # Positional argument must be a path under /workspace/case
+            norm = posixpath.normpath(
+                posixpath.join("/workspace/case", arg) if not arg.startswith("/") else arg
+            )
+            if not norm.startswith("/workspace/case"):
+                return GuardDecision(
+                    False, "path_escape", f"Pytest path outside /workspace/case: {arg}"
+                )
+
+        return GuardDecision(True, "pytest_allow", "Pytest command allowed")
+
+    @classmethod
+    def evaluate_test_file_write(cls, content: bytes | str) -> GuardDecision:
+        raw_text = (
+            content.decode("utf-8", errors="replace") if isinstance(content, bytes) else content
+        )
+        if len(raw_text.encode("utf-8")) > MAX_TEST_FILE_BYTES:
             return GuardDecision(
-                GUARD_BLOCK,
-                "invalid_test_path",
-                f"Test file path must be exactly {TEST_FILE_PATH}, got {path}",
+                False, "test_file_too_large", f"Test file exceeds {MAX_TEST_FILE_BYTES} bytes"
             )
 
-        content_bytes = content.encode("utf-8", errors="replace")
-        if len(content_bytes) > MAX_TEST_FILE_BYTES:
+        if not any(token in raw_text for token in ("def test_", "assert ", "@pytest.mark")):
             return GuardDecision(
-                GUARD_BLOCK,
-                "test_file_too_large",
-                f"Test file exceeds maximum size ({len(content_bytes)} > {MAX_TEST_FILE_BYTES} bytes)",
+                False, "test_content_invalid", "Test file must contain test functions or assertions"
             )
 
-        if "\x00" in content:
+        try:
+            tree = ast.parse(raw_text)
+        except SyntaxError as exc:
             return GuardDecision(
-                GUARD_BLOCK, "test_file_null_byte", "Test file contains null bytes"
+                False, "test_syntax_error", f"Test file contains syntax error: {exc}"
             )
 
-        return GuardDecision(GUARD_ALLOW, "test_file_allowed", "Test file write allowed")
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    root_mod = alias.name.split(".")[0]
+                    if root_mod in cls.FORBIDDEN_TEST_IMPORTS:
+                        return GuardDecision(
+                            False,
+                            "test_imports_forbidden",
+                            f"Import forbidden in tests: {root_mod}",
+                        )
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                root_mod = node.module.split(".")[0]
+                if root_mod in cls.FORBIDDEN_TEST_IMPORTS:
+                    return GuardDecision(
+                        False, "test_imports_forbidden", f"Import forbidden in tests: {root_mod}"
+                    )
+
+            # Check calls for eval / exec / compile
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id in ("eval", "exec", "compile")
+            ):
+                return GuardDecision(
+                    False, "test_execution_forbidden", f"Direct call to {node.func.id} forbidden"
+                )
+
+        return GuardDecision(True, "test_write_allow", "Test content accepted")

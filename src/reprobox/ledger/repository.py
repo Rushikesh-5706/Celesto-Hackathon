@@ -16,18 +16,18 @@ class LedgerRepository:
         self.database_url = database_url
 
     def upsert_run(self, run: RunRecord) -> RunRecord:
-        """Insert or update a run record keyed on run_id."""
         query = """
-        INSERT INTO runs (run_id, sandbox_name, problem_id, state, execution_target, outcome, updated_at)
-        VALUES (%(run_id)s, %(sandbox_name)s, %(problem_id)s, %(state)s, %(execution_target)s, %(outcome)s, now())
+        INSERT INTO runs (run_id, sandbox_name, problem_id, state, execution_target, outcome, computer_id, updated_at)
+        VALUES (%(run_id)s, %(sandbox_name)s, %(problem_id)s, %(state)s, %(execution_target)s, %(outcome)s, %(computer_id)s, now())
         ON CONFLICT (run_id) DO UPDATE SET
             sandbox_name = EXCLUDED.sandbox_name,
             problem_id = EXCLUDED.problem_id,
             state = EXCLUDED.state,
             execution_target = EXCLUDED.execution_target,
             outcome = COALESCE(EXCLUDED.outcome, runs.outcome),
+            computer_id = COALESCE(EXCLUDED.computer_id, runs.computer_id),
             updated_at = now()
-        RETURNING run_id, sandbox_name, problem_id, state, execution_target, outcome, created_at, updated_at;
+        RETURNING run_id, sandbox_name, problem_id, state, execution_target, outcome, computer_id, created_at, updated_at;
         """
         params = {
             "run_id": run.run_id,
@@ -36,6 +36,7 @@ class LedgerRepository:
             "state": run.state,
             "execution_target": run.execution_target,
             "outcome": run.outcome,
+            "computer_id": run.computer_id,
         }
         with get_connection(self.database_url) as conn, conn.cursor() as cur:
             cur.execute(query, params)
@@ -48,14 +49,24 @@ class LedgerRepository:
                 state=row["state"],
                 execution_target=row["execution_target"],
                 outcome=row["outcome"],
+                computer_id=row["computer_id"],
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
             )
 
-    def get_run(self, run_id: str) -> RunRecord | None:
-        """Fetch a single run by run_id."""
+    def record_computer_id(self, run_id: str, computer_id: str) -> None:
         query = """
-        SELECT run_id, sandbox_name, problem_id, state, execution_target, outcome, created_at, updated_at
+        UPDATE runs
+        SET computer_id = %(computer_id)s,
+            updated_at = now()
+        WHERE run_id = %(run_id)s;
+        """
+        with get_connection(self.database_url) as conn, conn.cursor() as cur:
+            cur.execute(query, {"run_id": run_id, "computer_id": computer_id})
+
+    def get_run(self, run_id: str) -> RunRecord | None:
+        query = """
+        SELECT run_id, sandbox_name, problem_id, state, execution_target, outcome, computer_id, created_at, updated_at
         FROM runs
         WHERE run_id = %(run_id)s;
         """
@@ -71,15 +82,15 @@ class LedgerRepository:
                 state=row["state"],
                 execution_target=row["execution_target"],
                 outcome=row["outcome"],
+                computer_id=row["computer_id"],
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
             )
 
     def list_runs(self, limit: int = 500) -> list[RunRecord]:
-        """List runs ordered newest first."""
         clamped_limit = min(max(1, limit), 1000)
         query = """
-        SELECT run_id, sandbox_name, problem_id, state, execution_target, outcome, created_at, updated_at
+        SELECT run_id, sandbox_name, problem_id, state, execution_target, outcome, computer_id, created_at, updated_at
         FROM runs
         ORDER BY created_at DESC
         LIMIT %(limit)s;
@@ -95,6 +106,7 @@ class LedgerRepository:
                     state=r["state"],
                     execution_target=r["execution_target"],
                     outcome=r["outcome"],
+                    computer_id=r["computer_id"],
                     created_at=r["created_at"],
                     updated_at=r["updated_at"],
                 )
@@ -102,7 +114,6 @@ class LedgerRepository:
             ]
 
     def update_state(self, run_id: str, state: str, outcome: str | None = None) -> None:
-        """Update the state and optional outcome of a run."""
         query = """
         UPDATE runs
         SET state = %(state)s,
@@ -116,7 +127,6 @@ class LedgerRepository:
     def append_event(
         self, run_id: str, event: str, payload: dict[str, Any] | None = None
     ) -> EventRecord:
-        """Append an event to run_events."""
         query = """
         INSERT INTO run_events (run_id, event, payload, ts)
         VALUES (%(run_id)s, %(event)s, %(payload)s, now())
@@ -140,7 +150,6 @@ class LedgerRepository:
             )
 
     def list_events(self, run_id: str) -> list[EventRecord]:
-        """List events for a specific run ordered chronologically."""
         query = """
         SELECT id, run_id, event, payload, ts
         FROM run_events

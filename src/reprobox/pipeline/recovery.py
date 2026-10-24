@@ -1,5 +1,3 @@
-"""Recovery mechanics for mid-task failure at Step 7 under the resume policy."""
-
 from __future__ import annotations
 
 import hashlib
@@ -10,7 +8,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from reprobox.constants import FAILURE_POLICY, RESUME_MAX_ATTEMPTS, TEST_FILE_PATH
-from reprobox.sandbox.provider import ComputerProvider
+from reprobox.exceptions import PolicyUnavailable
+from reprobox.sandbox.audited_provider import AuditedProvider
+from reprobox.sandbox.handle import GuestHandle
+from reprobox.sandbox.naming import new_sandbox_name
 
 logger = logging.getLogger(__name__)
 
@@ -21,18 +22,16 @@ class RecoveryResult:
     policy_applied: str
     attempts: int
     resume_ready_s: float
-    fallback_computer: Any | None = None
+    fallback_computer: GuestHandle | None = None
     fallback_sandbox_name: str | None = None
     error: str | None = None
 
 
 class RecoveryHandler:
-    """Implements Step 7 recovery policy: resume in-place, fall back to fresh start."""
-
     def __init__(
         self,
-        provider: ComputerProvider,
-        computer: Any,
+        provider: AuditedProvider,
+        computer: GuestHandle,
         sandbox_name: str,
         run_id: str,
         checkpoint_test_bytes: bytes,
@@ -49,43 +48,58 @@ class RecoveryHandler:
         self.checkpoint_manifest = checkpoint_manifest
         self.event_callback = event_callback
 
+    def rollback(self) -> None:
+        raise PolicyUnavailable("cloud", "Celesto Cloud does not support snapshot/rollback API")
+
     def handle_step7_failure(
         self,
-        step7_executor: Callable[[Any], tuple[bool, str, str]],
+        step7_executor: Callable[[GuestHandle], tuple[bool, str, str]],
+        stage_replay_callback: Callable[[GuestHandle], None] | None = None,
     ) -> RecoveryResult:
-        """Execute recovery procedure following step 7 failure."""
         logger.warning("Step 7 failed. Initiating recovery policy: %s", FAILURE_POLICY)
         self.event_callback("policy_selected", {"policy": FAILURE_POLICY})
 
-        # Up to RESUME_MAX_ATTEMPTS attempts to resume in-place
+        resume_ready_s = 0.0
+
         for attempt in range(1, RESUME_MAX_ATTEMPTS + 1):
             self.event_callback("resume_started", {"attempt": attempt})
             t0 = time.monotonic()
 
             try:
-                # Ensure computer is running if stopped
-                if getattr(self.computer, "status", None) not in (None, "running"):
-                    self.provider.start(self.computer)
-                # Verify boot responsiveness
-                res = self.provider.run(self.computer, "python3 --version", timeout=15)
-                if res.exit_code != 0:
+                # Call resume method on provider
+                self.provider.resume(
+                    self.computer, origin="pipeline", step="recovery", run_id=self.run_id
+                )
+                res = self.provider.run(
+                    self.computer,
+                    "python3 --version",
+                    origin="pipeline",
+                    timeout=15,
+                    step="recovery",
+                    run_id=self.run_id,
+                )
+                if not res.ok:
                     raise RuntimeError(f"Computer unready after restart: {res.stderr}")
             except Exception as exc:
-                logger.error(
-                    "Failed to start/verify computer on resume attempt %d: %s", attempt, exc
-                )
+                logger.error("Failed to resume computer on attempt %d: %s", attempt, exc)
                 continue
 
             resume_ready_s = time.monotonic() - t0
 
-            # Integrity verification: test file sha256 must match checkpoint
+            # Integrity verification
             integrity_ok = False
             try:
-                current_data = self.provider.read_file(self.computer, TEST_FILE_PATH)
+                current_data = self.provider.read_file(
+                    self.computer,
+                    TEST_FILE_PATH,
+                    origin="pipeline",
+                    step="recovery",
+                    run_id=self.run_id,
+                )
                 current_sha = hashlib.sha256(current_data).hexdigest()
                 integrity_ok = current_sha == self.checkpoint_test_sha
             except Exception as e:
-                logger.warning("Integrity check failed to read test file: %s", e)
+                logger.warning("Integrity check failed: %s", e)
 
             self.event_callback(
                 "resume_verified",
@@ -97,13 +111,23 @@ class RecoveryHandler:
             )
 
             if not integrity_ok:
-                logger.warning("Integrity check failed. Escalating from resume to fresh...")
+                logger.warning("Integrity check failed; escalating to fresh start")
                 break
 
             self.event_callback("policy_applied", {"policy": "resume", "attempt": attempt})
 
             # Clear cache and retry step 7 execution
-            self.provider.run(self.computer, "rm -rf /workspace/case/.pytest_cache")
+            try:
+                self.provider.run(
+                    self.computer,
+                    "rm -rf /workspace/case/.pytest_cache",
+                    origin="pipeline",
+                    step="recovery",
+                    run_id=self.run_id,
+                )
+            except Exception as exc:
+                logger.debug("Cache clear warning during recovery: %s", exc)
+
             self.event_callback("step_started", {"step": 7, "name": "execute_test", "retry": True})
             success, stdout, stderr = step7_executor(self.computer)
             if success:
@@ -115,14 +139,52 @@ class RecoveryHandler:
                     resume_ready_s=resume_ready_s,
                 )
 
-        # If resume failed or integrity violated, escalate to fresh start
+        # Fresh start fallback
         self.event_callback("policy_escalated", {"from_policy": "resume", "to_policy": "fresh"})
-        logger.warning("Resume policy exhausted. Executing fresh start fallback...")
+        logger.warning("Resume attempts exhausted; executing fresh start fallback")
+
+        new_label = new_sandbox_name()
+        try:
+            fresh_handle = self.provider.create(new_label)
+            if stage_replay_callback:
+                stage_replay_callback(fresh_handle)
+
+            # Write test from checkpoint
+            self.provider.write_file(
+                fresh_handle,
+                TEST_FILE_PATH,
+                self.checkpoint_test_bytes,
+                origin="pipeline",
+                step="recovery_fresh",
+                run_id=self.run_id,
+            )
+
+            self.event_callback("policy_applied", {"policy": "fresh", "attempts": 1})
+            success, stdout, stderr = step7_executor(fresh_handle)
+            if success:
+                logger.info("Fresh fallback succeeded on new sandbox %s", new_label)
+                return RecoveryResult(
+                    recovered=True,
+                    policy_applied="fresh",
+                    attempts=1,
+                    resume_ready_s=resume_ready_s,
+                    fallback_computer=fresh_handle,
+                    fallback_sandbox_name=new_label,
+                )
+        except Exception as exc:
+            logger.error("Fresh fallback failed: %s", exc)
+            return RecoveryResult(
+                recovered=False,
+                policy_applied="fresh_failed",
+                attempts=1,
+                resume_ready_s=resume_ready_s,
+                error=str(exc),
+            )
 
         return RecoveryResult(
             recovered=False,
-            policy_applied="fresh_required",
-            attempts=RESUME_MAX_ATTEMPTS,
-            resume_ready_s=0.0,
-            error="Resume attempts exhausted; fresh start required",
+            policy_applied="fresh_failed",
+            attempts=1,
+            resume_ready_s=resume_ready_s,
+            error="Fresh fallback did not reproduce failure",
         )
