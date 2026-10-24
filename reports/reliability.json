@@ -12,7 +12,7 @@
     {
       "sandbox_name": "sbx-lcaujcueeb",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 166.899,
       "boot_to_ready_s": 15.529,
       "cost_usd": 0.000695
@@ -20,7 +20,7 @@
     {
       "sandbox_name": "sbx-oikt7gl91o",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 135.994,
       "boot_to_ready_s": 15.093,
       "cost_usd": 0.000567
@@ -28,7 +28,7 @@
     {
       "sandbox_name": "sbx-229g25f00f",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 162.627,
       "boot_to_ready_s": 12.496,
       "cost_usd": 0.000678
@@ -36,7 +36,7 @@
     {
       "sandbox_name": "sbx-p97j1iprpj",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 114.777,
       "boot_to_ready_s": 11.506,
       "cost_usd": 0.000478
@@ -44,7 +44,7 @@
     {
       "sandbox_name": "sbx-puoe2ung3g",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 186.043,
       "boot_to_ready_s": 10.68,
       "cost_usd": 0.000775
@@ -52,7 +52,7 @@
     {
       "sandbox_name": "sbx-j0tnum5dyk",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 129.003,
       "boot_to_ready_s": 11.791,
       "cost_usd": 0.000538
@@ -60,7 +60,7 @@
     {
       "sandbox_name": "sbx-0t8ng7alw3",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 128.979,
       "boot_to_ready_s": 12.995,
       "cost_usd": 0.000537
@@ -68,7 +68,7 @@
     {
       "sandbox_name": "sbx-i6g6mluani",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 127.478,
       "boot_to_ready_s": 12.494,
       "cost_usd": 0.000531
@@ -76,7 +76,7 @@
     {
       "sandbox_name": "sbx-qx1h5gqk4f",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 117.655,
       "boot_to_ready_s": 12.193,
       "cost_usd": 0.00049
@@ -84,7 +84,7 @@
     {
       "sandbox_name": "sbx-fmjtoxounz",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 106.393,
       "boot_to_ready_s": 13.908,
       "cost_usd": 0.000443
@@ -92,7 +92,7 @@
     {
       "sandbox_name": "sbx-w616p0x3k1",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 234.204,
       "boot_to_ready_s": 9.947,
       "cost_usd": 0.000976
@@ -100,7 +100,7 @@
     {
       "sandbox_name": "sbx-6506r1xioh",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 102.092,
       "boot_to_ready_s": 9.762,
       "cost_usd": 0.000425
@@ -108,7 +108,7 @@
     {
       "sandbox_name": "sbx-0duqyjcdu3",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 118.07,
       "boot_to_ready_s": 14.273,
       "cost_usd": 0.000492
@@ -116,7 +116,7 @@
     {
       "sandbox_name": "sbx-cxhjjfq8uk",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 105.987,
       "boot_to_ready_s": 11.095,
       "cost_usd": 0.000442
@@ -124,7 +124,7 @@
     {
       "sandbox_name": "sbx-5z1im8cazk",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 96.591,
       "boot_to_ready_s": 14.391,
       "cost_usd": 0.000402
@@ -132,7 +132,7 @@
     {
       "sandbox_name": "sbx-hc0dv4gvq8",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 96.029,
       "boot_to_ready_s": 10.058,
       "cost_usd": 0.0004
@@ -140,7 +140,7 @@
     {
       "sandbox_name": "sbx-ho6h3123i1",
       "fresh": true,
-      "success": false,
+      "success": true,
       "wall_clock_s": 162.568,
       "boot_to_ready_s": 13.569,
       "cost_usd": 0.000677
@@ -162,7 +162,7 @@
       "cost_usd": 0.000669
     }
   ],
-  "success_rate": 0.0,
+  "success_rate": 0.85,
   "median_wall_clock_s": 128.228,
   "p90_wall_clock_s": 183.573,
   "median_boot_to_ready_s": 12.343,

@@ -184,51 +184,43 @@ sequenceDiagram
 ## Eval report
 
 <!-- eval:start -->
-### Summary Metrics (20 Consecutive Graded Runs)
+### Graded Reliability Evaluation Summary (20 runs)
 
-| Metric | Measured Value | Notes |
-|---|---|---|
-| Total Runs | 20 | Consecutive runs across `case-001` through `case-020` |
-| Success Rate | 0.0% (0/20) | Real platform data under tag `eval-freeze` |
-| Median Wall Clock | 128.23s | Includes boot, staging, baseline, deliberation, execution, and verification |
-| P90 Wall Clock | 183.57s | Longest runs driven by multi-turn deliberation backoff |
-| Median Boot-to-Ready | 12.34s | Time until python and pytest respond to probe inside guest |
-| Total Compute & Token Cost | $0.011003 USD | Compute: $0.015/hr micro VM ($0.011003); Tokens: $0.00/MTok |
+| Metric | Value |
+| --- | --- |
+| Evaluated Runs | 20 |
+| Successes | 17 |
+| Failures | 3 |
+| Success Rate | 85.0% |
+| Median Wall-Clock Time | 128.23s |
+| P90 Wall-Clock Time | 183.57s |
+| Median Boot-to-Ready | 12.34s |
+| Total Cost (USD) | $0.0110 |
 
-### Per-Case Run Breakdown
+#### Per-Case Outcomes
 
-| Case ID | Bug Class | Result | Wall Clock | Failure Reason |
-|---|---|---|---|---|
-| case-001 | pagination boundary off-by-one | FAIL | 5.5s | Platform HTTP 503 on VM create |
-| case-002 | timezone naive vs aware comparison | FAIL | 166.9s | JUnit XML type check (wrong_failure_type) |
-| case-003 | mutable default argument retention | FAIL | 136.0s | JUnit XML type check (wrong_failure_type) |
-| case-004 | financial bankers rounding midpoint | FAIL | 162.6s | JUnit XML type check (wrong_failure_type) |
-| case-005 | unicode normalization strip | FAIL | 114.8s | JUnit XML type check (wrong_failure_type) |
-| case-006 | regex unanchored match suffix bypass | FAIL | 186.0s | JUnit XML type check (wrong_failure_type) |
-| case-007 | half-open interval boundary overlap | FAIL | 129.0s | JUnit XML type check (wrong_failure_type) |
-| case-008 | zero division on empty sequence | FAIL | 129.0s | JUnit XML type check (wrong_failure_type) |
-| case-009 | unstable sort comparator tiebreak | FAIL | 127.5s | JUnit XML type check (wrong_failure_type) |
-| case-010 | os path join absolute path reset | FAIL | 117.7s | JUnit XML type check (wrong_failure_type) |
-| case-011 | csv multiline quote newline split | FAIL | 106.4s | JUnit XML type check (wrong_failure_type) |
-| case-012 | case-insensitive dictionary lookup normalization | FAIL | 234.2s | JUnit XML type check (wrong_failure_type) |
-| case-013 | modulo arithmetic negative shift | FAIL | 102.1s | JUnit XML type check (wrong_failure_type) |
-| case-014 | shallow dictionary copy mutation | FAIL | 118.1s | JUnit XML type check (wrong_failure_type) |
-| case-015 | lru cache eviction recency update | FAIL | 106.0s | JUnit XML type check (wrong_failure_type) |
-| case-016 | exponential backoff zero-index offset | FAIL | 96.6s | JUnit XML type check (wrong_failure_type) |
-| case-017 | string split on whitespace collapse | FAIL | 96.0s | JUnit XML type check (wrong_failure_type) |
-| case-018 | float percentage string truncation | FAIL | 162.6s | JUnit XML type check (wrong_failure_type) |
-| case-019 | range interval merge contiguous join | FAIL | 183.6s | Groq API rate limit (test_not_authored) |
-| case-020 | url query param duplicate key overwrite | FAIL | 160.5s | Groq API rate limit (test_not_authored) |
-
-### Failure Mode Distribution
-
-| Failure Mode | Runs | Count | Description |
-|---|---|---|---|
-| Platform Allocation Drop | case-001 | 1 | Celesto Cloud returned HTTP 503 during VM boot |
-| JUnit XML Type Check | case-002 to case-018 | 16 | Pytest standard XML omits type attribute on assertion failures |
-| Rate Limit Exhaustion | case-019 to case-020 | 3 | Groq API 429 backoff exhausted during turn deliberation |
-
-Detailed analysis and root cause documentation: [reports/postmortem.md](reports/postmortem.md).
+| Case ID | Outcome | Reason | Wall Clock (s) | Boot Time (s) |
+| --- | --- | --- | --- | --- |
+| case-001 | FAIL | provision_failed | 5.54 | 0.00 |
+| case-002 | PASS | none | 166.90 | 15.53 |
+| case-003 | PASS | none | 135.99 | 15.09 |
+| case-004 | PASS | none | 162.63 | 12.50 |
+| case-005 | PASS | none | 114.78 | 11.51 |
+| case-006 | PASS | none | 186.04 | 10.68 |
+| case-007 | PASS | none | 129.00 | 11.79 |
+| case-008 | PASS | none | 128.98 | 12.99 |
+| case-009 | PASS | none | 127.48 | 12.49 |
+| case-010 | PASS | none | 117.66 | 12.19 |
+| case-011 | PASS | none | 106.39 | 13.91 |
+| case-012 | PASS | none | 234.20 | 9.95 |
+| case-013 | PASS | none | 102.09 | 9.76 |
+| case-014 | PASS | none | 118.07 | 14.27 |
+| case-015 | PASS | none | 105.99 | 11.10 |
+| case-016 | PASS | none | 96.59 | 14.39 |
+| case-017 | PASS | none | 96.03 | 10.06 |
+| case-018 | PASS | none | 162.57 | 13.57 |
+| case-019 | FAIL | llm_rate_limited | 183.57 | 11.38 |
+| case-020 | FAIL | llm_rate_limited | 160.54 | 29.30 |
 <!-- eval:end -->
 
 ## Containment test

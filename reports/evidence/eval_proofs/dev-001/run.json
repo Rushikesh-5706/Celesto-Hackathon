@@ -1,0 +1,16 @@
+{
+  "case_id": "dev-001",
+  "run_id": "demo-5s0rj6v031",
+  "sandbox_name": "sbx-5s0rj6v031",
+  "computer_id": "unknown",
+  "outcome": "failed",
+  "success": false,
+  "failure_reason": "unclassified_failure",
+  "wall_clock_s": 3.587,
+  "boot_to_ready_s": 0.0,
+  "prompt_tokens": 0,
+  "completion_tokens": 0,
+  "cost_usd": 0.0,
+  "step_timings": {},
+  "preview_url_status": 0
+}

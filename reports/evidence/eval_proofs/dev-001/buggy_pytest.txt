@@ -1,0 +1,25 @@
+STDOUT:
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0
+rootdir: /workspace/case/tests
+collected 1 item
+
+workspace/case/tests/test_issue_repro.py F                               [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_sum_range_inclusive ___________________________
+
+    def test_sum_range_inclusive():
+        """Test that sum_range includes the stop value (inclusive).
+        The current implementation excludes the stop, so this test should fail.
+        """
+>       assert sum_range(1, 5) == 15
+E       assert 10 == 15
+E        +  where 10 = sum_range(1, 5)
+
+workspace/case/tests/test_issue_repro.py:7: AssertionError
+=========================== short test summary info ============================
+FAILED workspace/case/tests/test_issue_repro.py::test_sum_range_inclusive - a...
+============================== 1 failed in 0.01s ===============================
+
+STDERR:
