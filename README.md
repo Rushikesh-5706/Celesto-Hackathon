@@ -8,11 +8,13 @@ and authors pytest reproductions verified against reference fixes.
 |---|---|
 | Provider | Celesto Cloud (Micro size) |
 | Model | openai/gpt-oss-120b |
-| Evaluated Cases | 20 graded cases |
-| Eval Success Rate | In progress |
-| Median Wall Clock | In progress |
-| P90 Wall Clock | In progress |
+| Batch 1 (23 Oct, commit 5ae67d9) | 20 fresh sandboxes, 0 of 20 verified success (classifier bug, see below) |
+| Rerun After Fix | See `reports/evidence/BATCH1_NOTE.md` and eval table below |
 | Demo Walkthrough | [demo/walkthrough.mp4](demo/walkthrough.mp4) |
+
+## AI assistance
+
+I used Antigravity as a coding assistant and Claude for planning and review. I have read and can explain the code in this repository. The main libraries are FastAPI, psycopg, httpx and the Celesto SDK (Apache 2.0).
 
 ## Problem statement
 
@@ -25,7 +27,7 @@ The host system is never exposed to untrusted code or repository contents.
 
 Reprobox uses Celesto cloud micro sandboxes for all untrusted code execution.
 
-### Claimed Capabilities
+### Capabilities used
 
 1. **Safety Hooks (Pre-run Guard Wrapper)**:
    - What I used: A dedicated control-plane pre-run hook (`reprobox.sandbox.guard.Guard`) that parses and evaluates every shell command before dispatching to `computer.run()`.
@@ -45,9 +47,9 @@ Standard local Docker containers share the host Linux kernel and expose local da
 ### What would break at 1,000 users
 
 At 1,000 concurrent users, three clear bottlenecks emerge:
-1. Concurrent sandbox quotas: Under trial tiers, only 1 concurrent container is allowed. Reaching 1,000 users requires upgraded organization fleet capacity with pre-warmed pools.
-2. Cold boot latency: Boot-to-ready latency averages 10 to 15 seconds per sandbox. A thousand concurrent starts would overwhelm API control planes without warm container standby pools.
-3. Network bandwidth on artifact uploads: Transferring repositories via base64 encoded chunks consumes network capacity; 1,000 parallel transfers would require direct S3 presigned URL volume mounting instead of inline command injection.
+1. Concurrent sandbox quotas: The free trial allows only 2 new sandboxes per hour. Reaching 1,000 users requires upgraded organization fleet capacity with pre-warmed pools.
+2. Cold boot latency: Boot-to-ready latency averages around 12 seconds per sandbox. A thousand concurrent starts would overwhelm API control planes without warm container standby pools.
+3. Network bandwidth on artifact uploads: Transferring repositories via base64 encoded chunks consumes network capacity; 1,000 parallel transfers would require direct presigned URL volume mounting instead of inline command injection.
 
 ## Architecture
 
@@ -69,7 +71,6 @@ flowchart TD
 
     subgraph UntrustedComputers["Untrusted Computers"]
         CelestoSandbox["Celesto Sandbox"]
-        SnapshotStore["Snapshot Store (not used on cloud provider)"]
         NetworkPolicy["Network Policy"]
     end
 
@@ -81,7 +82,6 @@ flowchart TD
     RunLedgerAPI -->|"Reads and writes runs"| PostgresLedger
     RunLedgerAPI -->|"Reads provider config"| EnvironmentFile
     RunLedgerAPI -->|"Create, exec, stop, delete"| CelestoSandbox
-    RunLedgerAPI -.->|"Checkpoint or restore (not used on cloud provider)"| SnapshotStore
     RunLedgerAPI -->|"Allow, deny, or limit"| NetworkPolicy
     RunLedgerAPI -->|"Appends command lines"| CommandAuditLog
     RunLedgerAPI -->|"Writes graded reports"| ReportDirectory
@@ -117,8 +117,8 @@ State definitions:
 - **Succeeded**: The reproduction proof output exists.
 - **MidTaskFailure**: Step 7 did not complete and failure is detected.
 - **Resumed**: Re-executes on the same disk without reprovisioning.
-- **RolledBack**: Restores a snapshot taken before the risky step.
-- **FreshStart**: Deletes the guest and creates another with a new unique name.
+- **RolledBack**: Restores a snapshot taken before the risky step (not supported on cloud provider).
+- **FreshStart**: Deletes the guest and creates another with a new unique name (fallback only).
 - **Deleted**: Cleanup terminal state. Every path ends at Deleted.
 
 Only the Resumed path is exercised for real in graded evidence. RolledBack and FreshStart exist in code and tests but were not exercised against the real provider.
@@ -181,67 +181,111 @@ sequenceDiagram
 4. When the agent completes, the pipeline executes the test probe, classifies failure output, checks reference fixes, collects the proof, and deletes the container to enter `deleted` state.
 5. All lifecycle transitions and execution metrics are persisted directly to PostgreSQL.
 
+## What happened with the 20 runs
+
+The first evaluation batch ran at commit `5ae67d9` on 23 Oct 2026 at 08:47 UTC using 20 real Celesto Cloud sandboxes.
+All 20 verdicts were recorded as failures because my classifier misread pytest's JUnit XML output.
+Pytest writes `<failure message="...">` without an explicit `type="..."` attribute on standard assertion failures,
+but the original classifier read `failure_node.attrib.get("type", "")` and compared it to the expected exception name.
+Because the `type` attribute was always empty, every run was recorded as `wrong_failure_type`.
+
+I found this by seeing 17 identical failure reasons in a row in the raw data.
+The batch is kept byte-for-byte unedited in `reports/evidence/eval_runs.jsonl`.
+The raw timings, costs, and sandbox names are accurate.
+See `reports/evidence/BATCH1_NOTE.md` for the full record.
+
+After fixing the classifier, I reran as many cases as the free trial allowed (2 new sandboxes per hour).
+Results from the rerun are in `reports/evidence/rerun_after_fix.jsonl`.
+A full 20-run rerun was not possible in the submission window.
+
+## Free trial limit
+
+The Celesto free trial allows 2 new sandboxes per hour (`trial_create_rate_limit_reached`, HTTP 429).
+When the limit is hit, `CelestoProvider.create` parses the wait time from the error message,
+records the raw response to `reports/evidence/trial_limit_probe.log`, and retries after the stated wait.
+
+In the concurrency test (6 parallel jobs started simultaneously), only 1 job reached a sandbox.
+The other 5 were rejected at creation. No sandbox name collisions occurred because each label
+contains a unique cryptographically random suffix and the ledger checks for duplicates.
+
+## Lifecycle and cleanup
+
+Every sandbox is tracked through `managed_computer` in `reprobox.sandbox.lifecycle`.
+The context manager calls `provider.delete()` on exit regardless of whether the block
+succeeded or raised an exception, including `KeyboardInterrupt` and `TimeoutError`.
+
+`reprobox sweep` lists and deletes any computers that appear in the ledger but are still alive
+in the cloud account after a run session.
+
+The interrupt test (`reprobox interrupt-test`) starts a real pipeline run, delivers `SIGINT`
+to the process during Step 5, and verifies through the SDK that the computer was deleted.
+Evidence is in `reports/evidence/lifecycle_interrupt.log`.
+
 ## Eval report
 
 <!-- eval:start -->
-### Graded Reliability Evaluation Summary (20 runs)
+### Batch 1 Evaluation (20 runs, commit `5ae67d9`)
+
+> **Note**: All 20 verdicts in this batch were recorded as failures due to a classifier bug that misread pytest JUnit XML output. The raw timings and costs are accurate. See `reports/evidence/BATCH1_NOTE.md` for details. The batch is kept unedited as the measured record.
 
 | Metric | Value |
 | --- | --- |
 | Evaluated Runs | 20 |
-| Successes | 17 |
-| Failures | 3 |
-| Success Rate | 85.0% |
+| Successes (as recorded) | 0 |
+| Failures (as recorded) | 20 |
+| Classifier Bug | yes, wrong_failure_type on 17 of 20 |
 | Median Wall-Clock Time | 128.23s |
 | P90 Wall-Clock Time | 183.57s |
 | Median Boot-to-Ready | 12.34s |
 | Total Cost (USD) | $0.0110 |
 
-#### Per-Case Outcomes
+#### Per-Case Outcomes (Batch 1, as recorded)
 
 | Case ID | Outcome | Reason | Wall Clock (s) | Boot Time (s) |
 | --- | --- | --- | --- | --- |
-| case-001 | FAIL | provision_failed | 5.54 | 0.00 |
-| case-002 | PASS | none | 166.90 | 15.53 |
-| case-003 | PASS | none | 135.99 | 15.09 |
-| case-004 | PASS | none | 162.63 | 12.50 |
-| case-005 | PASS | none | 114.78 | 11.51 |
-| case-006 | PASS | none | 186.04 | 10.68 |
-| case-007 | PASS | none | 129.00 | 11.79 |
-| case-008 | PASS | none | 128.98 | 12.99 |
-| case-009 | PASS | none | 127.48 | 12.49 |
-| case-010 | PASS | none | 117.66 | 12.19 |
-| case-011 | PASS | none | 106.39 | 13.91 |
-| case-012 | PASS | none | 234.20 | 9.95 |
-| case-013 | PASS | none | 102.09 | 9.76 |
-| case-014 | PASS | none | 118.07 | 14.27 |
-| case-015 | PASS | none | 105.99 | 11.10 |
-| case-016 | PASS | none | 96.59 | 14.39 |
-| case-017 | PASS | none | 96.03 | 10.06 |
-| case-018 | PASS | none | 162.57 | 13.57 |
-| case-019 | FAIL | llm_rate_limited | 183.57 | 11.38 |
-| case-020 | FAIL | llm_rate_limited | 160.54 | 29.30 |
+| case-001 | FAIL | pipeline_error | 5.54 | 0.00 |
+| case-002 | FAIL | wrong_failure_type | 166.90 | 15.53 |
+| case-003 | FAIL | wrong_failure_type | 135.99 | 15.09 |
+| case-004 | FAIL | wrong_failure_type | 162.63 | 12.50 |
+| case-005 | FAIL | wrong_failure_type | 114.78 | 11.51 |
+| case-006 | FAIL | wrong_failure_type | 186.04 | 10.68 |
+| case-007 | FAIL | wrong_failure_type | 129.00 | 11.79 |
+| case-008 | FAIL | wrong_failure_type | 128.98 | 12.99 |
+| case-009 | FAIL | wrong_failure_type | 127.48 | 12.49 |
+| case-010 | FAIL | wrong_failure_type | 117.66 | 12.19 |
+| case-011 | FAIL | wrong_failure_type | 106.39 | 13.91 |
+| case-012 | FAIL | wrong_failure_type | 234.20 | 9.95 |
+| case-013 | FAIL | wrong_failure_type | 102.09 | 9.76 |
+| case-014 | FAIL | wrong_failure_type | 118.07 | 14.27 |
+| case-015 | FAIL | wrong_failure_type | 105.99 | 11.10 |
+| case-016 | FAIL | wrong_failure_type | 96.59 | 14.39 |
+| case-017 | FAIL | wrong_failure_type | 96.03 | 10.06 |
+| case-018 | FAIL | wrong_failure_type | 162.57 | 13.57 |
+| case-019 | FAIL | test_not_authored | 183.57 | 11.38 |
+| case-020 | FAIL | test_not_authored | 160.54 | 29.30 |
+
+#### Rerun After Classifier Fix
+
+_Rerun not yet available. Free trial limit (2 new sandboxes per hour) prevented completing reruns within the submission window._
 <!-- eval:end -->
 
 ## Containment test
 
-The containment harness (`reprobox containment`) runs five verification phases:
-- Part A: Tests the real model against `inject-001` with active prompt injection.
-- Part B: Executes deterministic hostile commands (reading `.env`, dumping environment, curl exfiltration) through the guard. All are blocked.
-- Part C: Runs an unguarded control container to show what would happen without the guard.
-- Part D: Computes SHA-256 tree digest of host temp files before and after runs. Confirms host state is completely untouched.
-- Part E: Network policy verification.
+The containment harness (`reprobox containment`) runs three verification phases:
+- Part A: Tests the real model against `inject-001` with active prompt injection and a planted `.env`.
+- Part B: Executes deterministic hostile commands (reading `.env`, dumping environment, curl exfiltration, rm -rf) through the guard. All are blocked.
+- Part C: Runs an unguarded control run in the same guest to show what happens without the guard. Host state is unchanged.
 
 ## State and failure design
 
 Reprobox uses the `resume` policy for Step 7 failures.
 Step 7 executes the authored test file. Because steps 1 through 6 have already provisioned the machine, staged the repository, and paid the token cost of model reasoning, retrying Step 7 in-place is safe and idempotent.
 
-| Policy | Pro | Con | Measured Trade-off |
+| Policy | Pro | Con | Trade-off |
 |---|---|---|---|
-| Resume | Retains disk; 0 extra LLM tokens; ~9s restart | Risk of hidden dirty state (mitigated by integrity checks) | Optimal for test retry |
+| Resume | Retains disk; 0 extra LLM tokens | Risk of hidden dirty state (mitigated by integrity checks) | Optimal for test retry |
 | Rollback | Clean state restore | Cloud provider lacks snapshot API | Unsupported on cloud |
-| Fresh Start | Clean slate | Pays 15s boot again plus full LLM token cost | Fallback only |
+| Fresh Start | Clean slate | Pays full boot plus LLM token cost again | Fallback only |
 
 ## Setup
 
@@ -276,11 +320,17 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt -e .
 
-# Run dev case
+# Run dev case (streams events in real time)
 reprobox demo --case dev-001
 
 # Run containment test
 reprobox containment
+
+# Run reruns after classifier fix (stops at 13:00)
+reprobox rerun --until 13:00
+
+# Run all evidence steps in order (failure-demo, containment, interrupt-test, rerun)
+reprobox queue --until 13:00
 ```
 
 ## API reference
@@ -345,21 +395,15 @@ reprobox containment
 ## Limits and honest notes
 
 1. Fixtures are authored test cases, not live GitHub pull requests. This ensures reproducible ground-truth assertions across controlled bug categories.
-2. The trial tier enforces a concurrency limit of 1 active sandbox at a time. The concurrency test accurately documents this platform constraint.
-3. Cloud containers do not provide filesystem persistence across reboot without persistent disk volumes.
+2. The free trial enforces a limit of 2 new sandboxes per hour. The concurrency test accurately documents this platform constraint.
+3. The `callbacks` argument is documented in Python SDK guides but raised `unexpected keyword argument` on `_CloudComputer`, so the safety hook runs in the control plane.
 
 ## Notes for the Celesto team
 
-1. The cloud API returned HTTP 402 on initial container creation until `POST /v1/billing/usage-trial` was invoked. Auto-activating the trial on first key generation would reduce friction.
-2. The default Ubuntu 24.04 image does not include Python 3 or pip. The `coding-agent` template resolves this and should be documented as the recommended template for code agent workloads.
-3. The `callbacks` argument is documented in Python SDK guides but raised `unexpected keyword argument` on `_CloudComputer`.
-
-## Tooling and AI assistance
-
-AI coding assistants are allowed. Disclose which ones you used in your README.
-Antigravity was used as a coding assistant and Claude for planning and review. All design decisions are Rushi's to explain. The Celesto SDK (Apache 2.0) and the openai Python client are the main third-party libraries used.
+1. The `coding-agent` template should be documented as the recommended template for code agent workloads; the default Ubuntu 24.04 image does not include Python 3 or pip.
+2. The `callbacks` argument raised `unexpected keyword argument` on `_CloudComputer` in SDK 0.1.8.
 
 ## Credits and license
 
 MIT License. Copyright (c) 2026 Rushikesh Kunisetty.
-OpenAI client library is licensed under Apache 2.0.
+Celesto SDK is licensed under Apache 2.0.

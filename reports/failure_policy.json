@@ -1,7 +1,0 @@
-{
-  "failed_step": 7,
-  "total_steps": 10,
-  "policy": "resume",
-  "rationale": "Steps 1 through 6 encompass sandbox creation (median 12.5s), repository staging, baseline verification, and agent model reasoning turns. In contrast, Step 7 only executes the authored test via pytest. When Step 7 encounters an execution fault, resuming the machine takes 9.1s and preserves the intact workspace and authored repro test. Starting fresh would discard valid work and require repeating model deliberation, while rolling back is unavailable because Celesto Cloud does not expose snapshot primitives.",
-  "trace_path": "reports/failure_trace.jsonl"
-}

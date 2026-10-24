@@ -63,6 +63,7 @@ def run_pipeline(
     provider: AuditedProvider | None = None,
     repository: LedgerRepository | None = None,
     publish_preview: bool = False,
+    event_callback: Any | None = None,
 ) -> PipelineResult:
     t_start = time.monotonic()
     deadline = t_start + getattr(settings, "run_timeout_s", 600)
@@ -77,6 +78,11 @@ def run_pipeline(
             repo.append_event(run_id, event_name, payload)
         except Exception as e:
             logger.warning("Failed to record ledger event %s: %s", event_name, e)
+        if event_callback is not None:
+            try:
+                event_callback(event_name, payload)
+            except Exception as cb_exc:
+                logger.debug("event_callback raised: %s", cb_exc)
 
     boot_to_ready_s = 0.0
     prompt_tokens = 0

@@ -14,7 +14,9 @@ from reprobox.harness.evaluation import run_evaluation_batch
 from reprobox.harness.failure_demo import run_failure_demo
 from reprobox.harness.interrupt_test import run_interrupt_test
 from reprobox.harness.live_demo import run_live_demo
+from reprobox.harness.queue import run_queue
 from reprobox.harness.reports import build_all_reports
+from reprobox.harness.rerun import run_rerun
 from reprobox.harness.sweep import run_orphan_sweep
 from reprobox.harness.validate_cases import validate_all_cases
 from reprobox.sandbox.lifecycle import install_cleanup_handlers
@@ -79,6 +81,28 @@ def main(argv: Sequence[str] | None = None) -> int:
     reports_sub = reports_parser.add_subparsers(dest="subcommand", required=True)
     reports_sub.add_parser("build", help="Assemble official reports from raw evidence")
 
+    # rerun
+    rerun_parser = subparsers.add_parser(
+        "rerun",
+        help="Run cases in ascending order after classifier fix, appending to rerun_after_fix.jsonl",
+    )
+    rerun_parser.add_argument(
+        "--until",
+        default="13:00",
+        help="Stop creating new runs after this local time (HH:MM)",
+    )
+
+    # queue
+    queue_parser = subparsers.add_parser(
+        "queue",
+        help="Run evidence steps in fixed order: failure-demo, containment, interrupt-test, rerun",
+    )
+    queue_parser.add_argument(
+        "--until",
+        default="13:00",
+        help="Stop creating new runs after this local time (HH:MM)",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "serve":
@@ -119,6 +143,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "reports" and args.subcommand == "build":
         build_all_reports()
+        return 0
+
+    if args.command == "rerun":
+        run_rerun(until=args.until)
+        return 0
+
+    if args.command == "queue":
+        run_queue(until=args.until)
         return 0
 
     return 0

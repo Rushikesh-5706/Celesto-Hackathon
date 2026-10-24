@@ -1,8 +1,0 @@
-=== LIFECYCLE INTERRUPT TEST START 2026-10-24T02:25:00.000000+00:00 ===
-Case: dev-002, run_id: run-intr-dev002, sandbox_name: sbx-intrdev002
-Caught KeyboardInterrupt in main thread as expected
-Computer ID: cmp_df14bc94ffc8
-Ledger state after interrupt: deleted
-Present in active SDK cloud listing: False
-Lifecycle interrupt cleanup verified: True
-=== LIFECYCLE INTERRUPT TEST END 2026-10-24T02:25:35.000000+00:00 ===
